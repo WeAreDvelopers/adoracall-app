@@ -1,0 +1,73 @@
+version: '3.9'
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ura-php
+    restart: unless-stopped
+    working_dir: /app
+    expose:
+      - 9000
+    networks:
+      - ura-network
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_CONNECTION=mysql
+      - DB_DATABASE=ura_db
+      - DB_USERNAME=dvelopers
+      - DB_PASSWORD=Dvelopers#2026
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+      - /app/vendor
+      - /app/storage/logs
+      - /app/storage/framework
+
+  mysql:
+    image: mysql:8.0
+    container_name: ura-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_secure
+      MYSQL_DATABASE: ura_db
+      MYSQL_USER: dvelopers
+      MYSQL_PASSWORD: Dvelopers#2026
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ura-network
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: ura-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/app
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - ura-network
+    depends_on:
+      php:
+        condition: service_healthy
+
+networks:
+  ura-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

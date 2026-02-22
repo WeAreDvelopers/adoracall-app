@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer install:*)",
+      "Bash(php artisan migrate:*)",
+      "Bash(php artisan migrate:rollback:*)",
+      "Bash(php artisan tinker:*)",
+      "Bash(php artisan migrate:status:*)",
+      "Bash(php:*)",
+      "Bash(docker-compose logs:*)"
+    ]
+  }
+}

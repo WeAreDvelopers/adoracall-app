@@ -1,0 +1,1518 @@
+{
+    "conversation_flow_id": "conversation_flow_262215819492",
+    "version": 11,
+    "nodes": [
+        {
+            "instruction": {
+                "type": "prompt",
+                "text": "Olá, bom dia. Posso falar com {{nome_cliente}}, por gentileza?"
+            },
+            "name": "Inicio",
+            "edges": [
+                {
+                    "destination_node_id": "node-apresentacao",
+                    "id": "edge-confirma-identidade",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "O usuário confirma que é ele mesmo"
+                    }
+                },
+                {
+                    "destination_node_id": "node-pessoa-errada",
+                    "id": "edge-nao-confirma",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Usuário informa que não é a pessoa procurada ou não pode atender"
+                    }
+                }
+            ],
+            "start_speaker": "agent",
+            "id": "start-node-1770135976507",
+            "type": "conversation",
+            "display_position": {
+                "x": 550,
+                "y": 0
+            }
+        },
+        {
+            "name": "Pessoa Errada",
+            "edges": [
+                {
+                    "destination_node_id": "end-call-node",
+                    "id": "edge-encerra-pessoa-errada",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Sempre"
+                    }
+                }
+            ],
+            "id": "node-pessoa-errada",
+            "type": "conversation",
+            "display_position": {
+                "x": 9900,
+                "y": 20
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Sem problemas. Desculpe o transtorno. Tenha um ótimo dia!"
+            }
+        },
+        {
+            "instruction": {
+                "type": "static_text",
+                "text": "Olá, tudo bem? Me chamo Alice, sou consultora da RedeBrasil, parceira autorizada do Banco Inter. Estou entrando em contato para falar sobre uma negociação especial dos seus débitos."
+            },
+            "name": "Apresentação",
+            "edges": [
+                {
+                    "destination_node_id": "node-solicitar-cpf",
+                    "id": "edge-para-cpf",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Usuário aceita ouvir ou demonstra interesse"
+                    }
+                },
+                {
+                    "destination_node_id": "node-encerrar-sem-validacao",
+                    "id": "edge-nao-quer-ouvir",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Usuário não quer ouvir ou pede para não ligar mais"
+                    }
+                }
+            ],
+            "id": "node-apresentacao",
+            "type": "conversation",
+            "display_position": {
+                "x": 1100,
+                "y": 450
+            },
+            "skip_response_edge": {
+                "destination_node_id": "node-solicitar-cpf",
+                "id": "edge-1770386306184",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Skip response"
+                }
+            }
+        },
+        {
+            "name": "Solicitar CPF",
+            "edges": [
+                {
+                    "destination_node_id": "node-extrair-cpf",
+                    "id": "edge-cpf-informado",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Usuário informa o documento parcial"
+                    }
+                }
+            ],
+            "id": "node-solicitar-cpf",
+            "type": "conversation",
+            "display_position": {
+                "x": 1650,
+                "y": 480
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Para eu conseguir verificar sua situação, preciso que você me confirme o seu cpf, por favor, me informe os três primeiro dígitos do seu documento"
+            }
+        },
+        {
+            "variables": [
+                {
+                    "name": "documento",
+                    "description": "CPF do cliente com 3 dígitos numéricos sem formatação. Exemplo: 123",
+                    "type": "number",
+                    "choices": []
+                }
+            ],
+            "else_edge": {
+                "destination_node_id": "node-solicitar-cpf-novamente",
+                "id": "edge-cpf-nao-extraido",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "instruction": {
+                "type": "prompt",
+                "text": "Extraia o CPF completo que o cliente acabou de informar. O CPF deve ter exatamente 11 dígitos numéricos. Remova qualquer formatação (pontos, traços, espaços) e retorne apenas os números."
+            },
+            "name": "Extrai CPF",
+            "edges": [
+                {
+                    "destination_node_id": "node-1770386566390",
+                    "id": "edge-cpf-extraido",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "documento foi extraído com sucesso"
+                    }
+                }
+            ],
+            "id": "node-extrair-cpf",
+            "type": "extract_dynamic_variables",
+            "display_position": {
+                "x": 2200,
+                "y": 442.5
+            }
+        },
+        {
+            "name": "Solicitar CPF Novamente",
+            "edges": [
+                {
+                    "destination_node_id": "node-extrair-cpf",
+                    "id": "edge-retry-cpf",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Usuário repete o CPF"
+                    }
+                }
+            ],
+            "id": "node-solicitar-cpf-novamente",
+            "type": "conversation",
+            "display_position": {
+                "x": 2750,
+                "y": 480
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Não consegui identificar o CPF corretamente. Pode repetir para mim, por favor? Fale apenas os números, sem pontos ou traços."
+            }
+        },
+        {
+            "name": "Encerrar Sem Validação",
+            "edges": [
+                {
+                    "destination_node_id": "end-call-node",
+                    "id": "edge-fim-sem-validacao",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Sempre"
+                    }
+                }
+            ],
+            "id": "node-encerrar-sem-validacao",
+            "type": "conversation",
+            "display_position": {
+                "x": 9900,
+                "y": 460
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Sem problemas. Se precisar, pode entrar em contato diretamente com o Banco Inter. Agradeço sua atenção!"
+            }
+        },
+        {
+            "name": "Cliente Ciente da Dívida",
+            "edges": [
+                {
+                    "destination_node_id": "node-disposto-negociar",
+                    "id": "edge-ciente",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente confirma que sabe da dívida"
+                    }
+                },
+                {
+                    "destination_node_id": "node-disposto-negociar",
+                    "id": "edge-nao-ciente",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente não sabia ou tem dúvidas"
+                    }
+                }
+            ],
+            "id": "node-cliente-ciente-divida",
+            "type": "conversation",
+            "display_position": {
+                "x": 3300,
+                "y": 880
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Muito obrigado por confirmar os dados! \nO seu documento é {{cpf}}.\nO motivo do meu contato é referente a uma dívida que tem conosco. Você está ciente desta dívida?"
+            }
+        },
+        {
+            "name": "Disposto a Negociar",
+            "edges": [
+                {
+                    "destination_node_id": "node-buscar-propostas",
+                    "id": "edge-quer-ouvir",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente quer ouvir as propostas"
+                    }
+                },
+                {
+                    "destination_node_id": "node-cliente-recusa",
+                    "id": "edge-nao-quer",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente não quer ouvir agora"
+                    }
+                }
+            ],
+            "id": "node-disposto-negociar",
+            "type": "conversation",
+            "display_position": {
+                "x": 3835.3846153846152,
+                "y": 776.9230769230769
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Deseja ouvir as propostas de quitação que temos pra você?"
+            }
+        },
+        {
+            "name": "Cliente Recusa",
+            "edges": [
+                {
+                    "destination_node_id": "end-call-node",
+                    "id": "edge-fim-recusa",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Sempre"
+                    }
+                }
+            ],
+            "id": "node-cliente-recusa",
+            "type": "conversation",
+            "display_position": {
+                "x": 9900,
+                "y": 920
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Sem problemas. Fico à disposição caso mude de ideia. Tenha um ótimo dia!"
+            }
+        },
+        {
+            "tool_id": "tool-fetch-proposals",
+            "else_edge": {
+                "destination_node_id": "node-erro-sistema",
+                "id": "node-buscar-propostas-else-edge",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Perfeito! Vou buscar as informações da sua dívida. Um momento, por favor."
+            },
+            "name": "Buscar Propostas - API Call",
+            "edges": [
+                {
+                    "destination_node_id": "node-formatar-debt-ids",
+                    "id": "edge-propostas-encontradas",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Propostas foram carregadas com sucesso"
+                    }
+                },
+                {
+                    "destination_node_id": "node-erro-sistema",
+                    "id": "edge-erro-propostas",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Erro ao buscar propostas"
+                    }
+                }
+            ],
+            "id": "node-buscar-propostas",
+            "type": "function",
+            "tool_type": "local",
+            "speak_during_execution": true,
+            "display_position": {
+                "x": 4511.33537764285,
+                "y": 583.7276148286825
+            },
+            "wait_for_result": true
+        },
+        {
+            "variables": [
+                {
+                    "name": "debt_ids_formatted",
+                    "description": "Array de IDs das dívidas no formato correto para a API",
+                    "type": "string",
+                    "choices": []
+                }
+            ],
+            "else_edge": {
+                "destination_node_id": "node-1770647154157",
+                "id": "node-formatar-debt-ids-else-edge",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "instruction": {
+                "type": "prompt",
+                "text": "Converta a variável 'debt_ids' (que vem da API fetch_debts) em um array JSON stringificado. Se for uma string, transforme em array. Exemplo: ['123', '456']"
+            },
+            "name": "Formatar Debt IDs",
+            "edges": [
+                {
+                    "destination_node_id": "node-debug",
+                    "id": "edge-formatados",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Formatado com sucesso"
+                    }
+                }
+            ],
+            "id": "node-formatar-debt-ids",
+            "type": "extract_dynamic_variables",
+            "display_position": {
+                "x": 5170.511502417186,
+                "y": 462.1715993261014
+            }
+        },
+        {
+            "variables": [
+                {
+                    "name": "cpf",
+                    "description": "CPF completo do cliente",
+                    "type": "string",
+                    "choices": []
+                },
+                {
+                    "name": "debt_ids",
+                    "description": "IDs das dívidas",
+                    "type": "string",
+                    "choices": []
+                }
+            ],
+            "instruction": {
+                "type": "prompt",
+                "text": "Extraia e armazene o CPF completo e prepare o campo debt_ids para uso posterior"
+            },
+            "name": "Inicializar Variáveis",
+            "edges": [
+                {
+                    "destination_node_id": "node-cliente-ciente-divida",
+                    "id": "edge-variaveis-inicializadas",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Variáveis inicializadas"
+                    }
+                }
+            ],
+            "id": "node-inicializar-variaveis",
+            "type": "extract_dynamic_variables",
+            "display_position": {
+                "x": 3575.6876017822956,
+                "y": 255.3904977721303
+            }
+        },
+        {
+            "name": "Debug Variables",
+            "edges": [
+                {
+                    "destination_node_id": "node-apresentar-divida",
+                    "id": "edge-debug-ok",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Continue"
+                    }
+                }
+            ],
+            "id": "node-debug",
+            "type": "conversation",
+            "display_position": {
+                "x": 4486.141867608557,
+                "y": 1377.2509632333965
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "DEBUG: CPF: {{cpf}}, Debt IDs: {{debt_ids}}, Valor Vista: {{proposta_vista_valor}}"
+            }
+        },
+        {
+            "name": "Erro no Sistema",
+            "edges": [
+                {
+                    "destination_node_id": "end-call-node",
+                    "id": "edge-escalar-erro",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Sempre"
+                    }
+                }
+            ],
+            "id": "node-erro-sistema",
+            "type": "conversation",
+            "display_position": {
+                "x": 8800,
+                "y": 1170
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Estou com uma instabilidade momentânea no sistema. Vou precisar retornar a ligação em outro momento!"
+            }
+        },
+        {
+            "name": "Apresentar Dívida e Valor",
+            "edges": [
+                {
+                    "destination_node_id": "node-oferta-vista",
+                    "id": "edge-tem-valor-vista",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente diz que pode pagar à vista ou tem o valor"
+                    }
+                },
+                {
+                    "destination_node_id": "node-oferta-vista",
+                    "id": "edge-nao-tem-valor",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente não pode pagar à vista ou não tem o valor total"
+                    }
+                }
+            ],
+            "id": "node-apresentar-divida",
+            "type": "conversation",
+            "display_position": {
+                "x": 4950,
+                "y": 1420
+            },
+            "instruction": {
+                "type": "prompt",
+                "text": "Use a seguinte lógica:\n\nSe qtd_debitos == 1:\n'Verifiquei um débito em aberto no valor de R$ {{total_divida}}'\n\nSe qtd_debitos > 1:\n'Verifiquei alguns débitos em aberto totalizando R$ {{total_divida}}'\n\nDepois pergunte: 'Você já tem uma expectativa de pagamento do valor total à vista?'"
+            }
+        },
+        {
+            "name": "Apresentar Oferta À Vista",
+            "edges": [
+                {
+                    "destination_node_id": "node-1770581514422",
+                    "id": "edge-aceita-vista",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente aceita a oferta à vista (diz: sim, aceito, fecha, tá bom, pode ser)"
+                    }
+                },
+                {
+                    "destination_node_id": "node-oferecer-parcelamento",
+                    "id": "edge-recusa-vista",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente recusa ou diz que não pode pagar esse valor"
+                    }
+                }
+            ],
+            "id": "node-oferta-vista",
+            "type": "conversation",
+            "display_position": {
+                "x": 5500,
+                "y": 1400
+            },
+            "instruction": {
+                "type": "prompt",
+                "text": "Use a lógica de singular/plural:\n\nSe qtd_debitos == 1:\n'Consigo quitar esse débito à vista por R$ {{proposta_vista_valor}}, com vencimento para {{proposta_vista_vencimento}}. Faz sentido pra você?'\n\nSe qtd_debitos > 1:\n'Consigo quitar todos esses débitos à vista por R$ {{proposta_vista_valor}}, com vencimento para {{proposta_vista_vencimento}}. Essa opção funciona pra você?'"
+            }
+        },
+        {
+            "name": "Oferecer Parcelamento - Tentativa 1",
+            "edges": [
+                {
+                    "destination_node_id": "node-1770577009208",
+                    "id": "edge-escolhe-60x",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente escolhe a opção de 60 parcelas ou a primeira opção"
+                    }
+                },
+                {
+                    "destination_node_id": "node-confirmar-acordo-48x",
+                    "id": "edge-escolhe-48x",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente escolhe a opção de 48 parcelas ou a segunda opção"
+                    }
+                },
+                {
+                    "destination_node_id": "node-confirmar-acordo-36x",
+                    "id": "edge-escolhe-36x",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente escolhe a opção de 36 parcelas ou a terceira opção"
+                    }
+                },
+                {
+                    "destination_node_id": "node-dificuldade-financeira",
+                    "id": "edge-recusa-todas",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente recusa todas ou diz que não tem condição"
+                    }
+                },
+                {
+                    "destination_node_id": "node-proposta-fora-api",
+                    "id": "edge-proposta-diferente",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente sugere outro valor ou outra quantidade de parcelas"
+                    }
+                }
+            ],
+            "id": "node-oferecer-parcelamento",
+            "type": "conversation",
+            "display_position": {
+                "x": 6013.012876634055,
+                "y": 1848.2842708092523
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Tudo bem. Posso parcelar assim para você: {{plano_60x_nome}} vezes de R$ {{plano_60x_parcela}}, {{plano_48x_nome}} vezes de R$ {{plano_48x_parcela}}, ou {{plano_36x_nome}} vezes de R$ {{plano_36x_parcela}}. Qual fica melhor no seu orçamento?"
+            }
+        },
+        {
+            "name": "Dificuldade Financeira",
+            "edges": [
+                {
+                    "destination_node_id": "node-oferecer-parcelamento-2",
+                    "id": "edge-retry-parcelamento-2",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Sempre"
+                    }
+                }
+            ],
+            "id": "node-dificuldade-financeira",
+            "type": "conversation",
+            "display_position": {
+                "x": 6600,
+                "y": 2390
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Entendo sua situação. Vamos ver o que consigo ajustar dentro das opções disponíveis aqui no sistema."
+            }
+        },
+        {
+            "name": "Proposta Fora da API",
+            "edges": [
+                {
+                    "destination_node_id": "node-oferecer-parcelamento-2",
+                    "id": "edge-retry-parcelamento-2-proposta",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Sempre"
+                    }
+                }
+            ],
+            "id": "node-proposta-fora-api",
+            "type": "conversation",
+            "display_position": {
+                "x": 6600,
+                "y": 2830
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Entendo sua proposta, mas só consigo trabalhar com os valores que o sistema libera para mim."
+            }
+        },
+        {
+            "name": "Oferecer Parcelamento - Tentativa 2",
+            "edges": [
+                {
+                    "destination_node_id": "node-1770577009208",
+                    "id": "edge-escolhe-60x-t2",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente escolhe 60 parcelas"
+                    }
+                },
+                {
+                    "destination_node_id": "node-confirmar-acordo-48x",
+                    "id": "edge-escolhe-48x-t2",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente escolhe 48 parcelas"
+                    }
+                },
+                {
+                    "destination_node_id": "node-confirmar-acordo-36x",
+                    "id": "edge-escolhe-36x-t2",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente escolhe 36 parcelas"
+                    }
+                },
+                {
+                    "destination_node_id": "node-oferecer-parcelamento-3",
+                    "id": "edge-recusa-todas-t2",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente recusa todas novamente"
+                    }
+                }
+            ],
+            "id": "node-oferecer-parcelamento-2",
+            "type": "conversation",
+            "display_position": {
+                "x": 7150,
+                "y": 2290
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "As opções que tenho disponíveis são:  {{plano_60x_nome}}  parcelas de R$ {{plano_60x_parcela}},  {{plano_48x_nome}}  parcelas de R$ {{plano_48x_parcela}}, ou  {{plano_36x_nome}}  parcelas de R$ {{plano_36x_parcela}}. Dessas alternativas, qual te ajuda mais agora?"
+            }
+        },
+        {
+            "name": "Oferecer Parcelamento - Tentativa 3 (Última)",
+            "edges": [
+                {
+                    "destination_node_id": "node-1770577009208",
+                    "id": "edge-escolhe-60x-t3",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente escolhe 60 parcelas"
+                    }
+                },
+                {
+                    "destination_node_id": "node-confirmar-acordo-48x",
+                    "id": "edge-escolhe-48x-t3",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente escolhe 48 parcelas"
+                    }
+                },
+                {
+                    "destination_node_id": "node-confirmar-acordo-36x",
+                    "id": "edge-escolhe-36x-t3",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente escolhe 36 parcelas"
+                    }
+                },
+                {
+                    "destination_node_id": "node-1770563518145",
+                    "id": "edge-recusa-final",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente recusa pela terceira vez"
+                    }
+                }
+            ],
+            "id": "node-oferecer-parcelamento-3",
+            "type": "conversation",
+            "display_position": {
+                "x": 7551.600600713798,
+                "y": 3283.4044711428355
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Entendo. As condições que consigo oferecer são: 60 vezes de R$ {{plano_60x_parcela}}, 48 vezes de R$ {{plano_48x_parcela}}, ou 36 vezes de R$ {{plano_36x_parcela}}. Qual delas cabe no seu orçamento agora?"
+            }
+        },
+        {
+            "tool_id": "tool-confirm-agreement-vista",
+            "else_edge": {
+                "id": "node-confirmar-acordo-vista-else-edge",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Perfeito! Vou registrar aqui o acordo à vista de R$ {{proposta_vista_valor}}. Só um momento..."
+            },
+            "name": "Confirmar Acordo À Vista",
+            "edges": [
+                {
+                    "id": "edge-acordo-confirmado-vista",
+                    "transition_condition": {
+                        "type": "equation",
+                        "equations": [
+                            {
+                                "left": "{{acordo_confirmado}}",
+                                "operator": "==",
+                                "right": "true"
+                            }
+                        ],
+                        "operator": "&&"
+                    }
+                },
+                {
+                    "id": "edge-erro-acordo-vista",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Erro ao confirmar acordo"
+                    }
+                }
+            ],
+            "id": "node-confirmar-acordo-vista",
+            "type": "function",
+            "tool_type": "local",
+            "speak_during_execution": true,
+            "display_position": {
+                "x": 6529.386066095981,
+                "y": 431.40682434131884
+            },
+            "wait_for_result": true
+        },
+        {
+            "tool_id": "tool-confirm-agreement-60x",
+            "else_edge": {
+                "id": "node-confirmar-acordo-60x-else-edge",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Perfeito! Vou registrar o acordo em 60 vezes de R$ {{plano_60x_parcela}}. Só um momento..."
+            },
+            "name": "Confirmar Acordo 60x",
+            "edges": [
+                {
+                    "id": "edge-acordo-confirmado-60x",
+                    "transition_condition": {
+                        "type": "equation",
+                        "equations": [
+                            {
+                                "left": "{{acordo_confirmado}}",
+                                "operator": "==",
+                                "right": "true"
+                            }
+                        ],
+                        "operator": "&&"
+                    }
+                }
+            ],
+            "id": "node-confirmar-acordo-60x",
+            "type": "function",
+            "tool_type": "local",
+            "speak_during_execution": true,
+            "display_position": {
+                "x": 8175.380107957308,
+                "y": 1931.3450269893272
+            },
+            "wait_for_result": true
+        },
+        {
+            "tool_id": "tool-confirm-agreement-48x",
+            "else_edge": {
+                "destination_node_id": "node-1770399508195",
+                "id": "node-confirmar-acordo-48x-else-edge",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Perfeito! Vou registrar o acordo em 48 vezes de R$ {{plano_48x_parcela}}. Só um momento..."
+            },
+            "name": "Confirmar Acordo 48x",
+            "edges": [
+                {
+                    "destination_node_id": "node-pos-acordo",
+                    "id": "edge-acordo-confirmado-48x",
+                    "transition_condition": {
+                        "type": "equation",
+                        "equations": [
+                            {
+                                "left": "{{acordo_confirmado}}",
+                                "operator": "==",
+                                "right": "true"
+                            }
+                        ],
+                        "operator": "&&"
+                    }
+                }
+            ],
+            "id": "node-confirmar-acordo-48x",
+            "type": "function",
+            "tool_type": "local",
+            "speak_during_execution": true,
+            "display_position": {
+                "x": 8250,
+                "y": 2390
+            },
+            "wait_for_result": true
+        },
+        {
+            "tool_id": "tool-confirm-agreement-36x",
+            "else_edge": {
+                "destination_node_id": "node-1770399508195",
+                "id": "node-confirmar-acordo-36x-else-edge",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Perfeito! Vou registrar o acordo em 36 vezes de R$ {{plano_36x_parcela}}. Só um momento..."
+            },
+            "name": "Confirmar Acordo 36x",
+            "edges": [
+                {
+                    "destination_node_id": "node-pos-acordo",
+                    "id": "edge-acordo-confirmado-36x",
+                    "transition_condition": {
+                        "type": "equation",
+                        "equations": [
+                            {
+                                "left": "{{acordo_confirmado}}",
+                                "operator": "==",
+                                "right": "true"
+                            }
+                        ],
+                        "operator": "&&"
+                    }
+                }
+            ],
+            "id": "node-confirmar-acordo-36x",
+            "type": "function",
+            "tool_type": "local",
+            "speak_during_execution": true,
+            "display_position": {
+                "x": 8250,
+                "y": 3720
+            },
+            "wait_for_result": true
+        },
+        {
+            "name": "Erro ao Confirmar Acordo",
+            "edges": [
+                {
+                    "destination_node_id": "end-call-node",
+                    "id": "edge-escalar-erro-acordo",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Sempre"
+                    }
+                }
+            ],
+            "id": "node-erro-acordo",
+            "type": "conversation",
+            "display_position": {
+                "x": 9900,
+                "y": 1490
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Tive uma instabilidade momentânea ao registrar o acordo. Não posso firmar o nosso acordo entrarei em contato novamente."
+            }
+        },
+        {
+            "name": "Pós-Acordo",
+            "edges": [
+                {
+                    "destination_node_id": "node-disponibilidade",
+                    "id": "edge-cliente-agradece",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente agradece ou confirma"
+                    }
+                },
+                {
+                    "destination_node_id": "node-esclarecer-pagamento",
+                    "id": "edge-duvida-pagamento",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente tem dúvida sobre pagamento, boleto ou vencimento"
+                    }
+                }
+            ],
+            "id": "node-pos-acordo",
+            "type": "conversation",
+            "display_position": {
+                "x": 8800,
+                "y": 1910
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Pronto, seu acordo está confirmado! O código é {{codigo_acordo}}. Você vai receber o boleto por e-mail e SMS. Qualquer dúvida sobre o pagamento, é só me chamar."
+            }
+        },
+        {
+            "name": "Esclarecer Pagamento",
+            "edges": [
+                {
+                    "destination_node_id": "node-disponibilidade",
+                    "id": "edge-duvida-esclarecida",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Dúvida esclarecida"
+                    }
+                }
+            ],
+            "id": "node-esclarecer-pagamento",
+            "type": "conversation",
+            "display_position": {
+                "x": 9350,
+                "y": 2790
+            },
+            "instruction": {
+                "type": "prompt",
+                "text": "Responda APENAS dúvidas sobre:\n- Como pagar o boleto\n- Onde encontrar o boleto\n- Data de vencimento\n- Código de barras ou PIX\n\nNÃO reabra negociação.\nNÃO ofereça novos valores.\nNÃO altere o acordo."
+            }
+        },
+        {
+            "name": "Disponibilidade Final",
+            "edges": [
+                {
+                    "destination_node_id": "end-call-node",
+                    "id": "edge-fim-pos-acordo",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Após 10 minutos sem interação ou cliente se despede"
+                    }
+                }
+            ],
+            "id": "node-disponibilidade",
+            "type": "conversation",
+            "display_position": {
+                "x": 9900,
+                "y": 1950
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Eu que agradeço. Fico à disposição."
+            }
+        },
+        {
+            "name": "Encerrar Chamada",
+            "id": "end-call-node",
+            "type": "end",
+            "speak_during_execution": true,
+            "display_position": {
+                "x": 10450,
+                "y": 1545
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "O atendimento foi finalizado. Agradecemos pela sua confiança. Tenha um ótimo dia!"
+            }
+        },
+        {
+            "name": "Conversation",
+            "edges": [
+                {
+                    "destination_node_id": "end-call-node",
+                    "id": "edge-1770304111938-rkcf53lpu",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Describe the transition condition"
+                    }
+                }
+            ],
+            "id": "node-1770304111938",
+            "type": "conversation",
+            "display_position": {
+                "x": 9900,
+                "y": 3060
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Não consegui validar o CPF, infelizmente!\nterei que encerrar a ligação"
+            }
+        },
+        {
+            "name": "Valida o CPF",
+            "edges": [
+                {
+                    "destination_node_id": "node-cliente-ciente-divida",
+                    "id": "edge-1770386580099-4rfwzeyzf",
+                    "transition_condition": {
+                        "type": "equation",
+                        "equations": [
+                            {
+                                "left": "{{documento}}",
+                                "operator": "==",
+                                "right": "{{valida_doc}}"
+                            }
+                        ],
+                        "operator": "&&"
+                    }
+                }
+            ],
+            "id": "node-1770386566390",
+            "else_edge": {
+                "destination_node_id": "node-1770304111938",
+                "id": "edge-1770386566390-xstpgwsel",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "type": "branch",
+            "display_position": {
+                "x": 2750,
+                "y": 940
+            }
+        },
+        {
+            "name": "Conversation",
+            "edges": [
+                {
+                    "destination_node_id": "end-call-node",
+                    "id": "edge-1770399508195-f9evkzwbj",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Usuário concorda"
+                    }
+                },
+                {
+                    "destination_node_id": "end-call-node",
+                    "id": "edge-1770399631946-3t6vmc54l",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Não concorda"
+                    }
+                }
+            ],
+            "id": "node-1770399508195",
+            "type": "conversation",
+            "display_position": {
+                "x": 8800,
+                "y": 3680
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Infelizmente eu não consegui confirmar o nosso acordo, podemos tentar novamente mais tarde?"
+            }
+        },
+        {
+            "name": "Conversation",
+            "edges": [
+                {
+                    "destination_node_id": "end-call-node",
+                    "id": "edge-1770563518145-c36w90weg",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Cliente aceita"
+                    }
+                }
+            ],
+            "id": "node-1770563518145",
+            "type": "conversation",
+            "display_position": {
+                "x": 9900,
+                "y": 3940
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Infelizmente não tenho mais propostas e como não houve um acordo, terei que encerrar a ligação, tudo bem?"
+            }
+        },
+        {
+            "variables": [
+                {
+                    "name": "cpf",
+                    "description": "Name of the user",
+                    "type": "number",
+                    "choices": []
+                },
+                {
+                    "name": "debt_ids",
+                    "description": "Array de debitos",
+                    "type": "string",
+                    "choices": []
+                },
+                {
+                    "name": "payment_type",
+                    "description": "Tipo de pagamento",
+                    "type": "string",
+                    "choices": []
+                },
+                {
+                    "name": "plan_id",
+                    "description": "id do plano",
+                    "type": "string",
+                    "choices": []
+                },
+                {
+                    "name": "total_value",
+                    "description": "Total da proposta",
+                    "type": "number",
+                    "choices": []
+                }
+            ],
+            "else_edge": {
+                "destination_node_id": "node-1770581514422",
+                "id": "node-1770573933982-else-edge",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "name": "Extract Variables",
+            "edges": [
+                {
+                    "destination_node_id": "node-1770575956913",
+                    "id": "edge-1770573933982-9z23j1wze",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Variáveis encontradas"
+                    }
+                }
+            ],
+            "id": "node-1770573933982",
+            "type": "extract_dynamic_variables",
+            "display_position": {
+                "x": 7444.606022362072,
+                "y": 1206.3837005598841
+            }
+        },
+        {
+            "tool_id": "tool-confirm-agreement-vista",
+            "else_edge": {
+                "destination_node_id": "node-erro-sistema",
+                "id": "node-1770575956913-else-edge",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "name": "Confirm Agreement Vista",
+            "edges": [
+                {
+                    "destination_node_id": "node-pos-acordo",
+                    "id": "edge-1770576012104-ogwuzwyyz",
+                    "transition_condition": {
+                        "type": "equation",
+                        "equations": [
+                            {
+                                "left": "{{acordo_confirmado}}",
+                                "operator": "==",
+                                "right": "true"
+                            }
+                        ],
+                        "operator": "&&"
+                    }
+                },
+                {
+                    "destination_node_id": "node-erro-acordo",
+                    "id": "edge-1770576017749-wc1mb8bu4",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "Erro ao confirmar acordo"
+                    }
+                }
+            ],
+            "id": "node-1770575956913",
+            "type": "function",
+            "tool_type": "local",
+            "speak_during_execution": false,
+            "display_position": {
+                "x": 8285.92407734225,
+                "y": 1329.649061433696
+            },
+            "wait_for_result": true
+        },
+        {
+            "tool_id": "tool-confirm-agreement-60x",
+            "else_edge": {
+                "destination_node_id": "node-1770399508195",
+                "id": "node-1770577009208-else-edge",
+                "transition_condition": {
+                    "type": "prompt",
+                    "prompt": "Else"
+                }
+            },
+            "name": "Confirm Agreement 60x",
+            "edges": [
+                {
+                    "destination_node_id": "node-pos-acordo",
+                    "id": "edge-1770577045390-6e7y86yj9",
+                    "transition_condition": {
+                        "type": "equation",
+                        "equations": [
+                            {
+                                "left": "{{acordo_confirmado}}",
+                                "operator": "==",
+                                "right": "true"
+                            }
+                        ],
+                        "operator": "&&"
+                    }
+                }
+            ],
+            "id": "node-1770577009208",
+            "type": "function",
+            "tool_type": "local",
+            "speak_during_execution": false,
+            "display_position": {
+                "x": 8016.403672739519,
+                "y": 1636.8164229622564
+            },
+            "wait_for_result": true
+        },
+        {
+            "name": "Conversation",
+            "edges": [
+                {
+                    "destination_node_id": "node-1770573933982",
+                    "id": "edge-1770581514422-pe1ayeate",
+                    "transition_condition": {
+                        "type": "prompt",
+                        "prompt": "usuário aceita aguardar um momento"
+                    }
+                }
+            ],
+            "id": "node-1770581514422",
+            "type": "conversation",
+            "display_position": {
+                "x": 6809.1219885007795,
+                "y": 1314.9674572795038
+            },
+            "instruction": {
+                "type": "static_text",
+                "text": "Perfeito! Vou registrar aqui o acordo à vista de R$ {{proposta_vista_valor}}. Você pode aguardar um momento..."
+            }
+        },
+        {
+            "name": "End Call",
+            "id": "node-1770647154157",
+            "type": "end",
+            "speak_during_execution": true,
+            "display_position": {
+                "x": 5935.835934702798,
+                "y": 628.9513976934197
+            },
+            "instruction": {
+                "type": "prompt",
+                "text": "Encerramento, super educado!"
+            }
+        }
+    ],
+    "start_node_id": "start-node-1770135976507",
+    "start_speaker": "agent",
+    "tools": [
+        {
+            "tool_id": "tool-validate-cpf",
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "parameter_type": "json",
+            "method": "GET",
+            "query_params": {},
+            "args_at_root": false,
+            "timeout_ms": 30000,
+            "name": "validate_cpf",
+            "description": "Valida se o CPF informado pelo cliente está correto e existe na base de dados.",
+            "response_variables": {
+                "nome_cliente": "data.name",
+                "tem_dividas": "data.has_debts",
+                "cpf_valido": "data.cpf_valido",
+                "cliente_email": "data.email",
+                "cliente_telefone": "data.phone"
+            },
+            "type": "custom",
+            "url": "https://carbonless-surlily-clorinda.ngrok-free.dev/api/ura/devedor/{{cpf}}"
+        },
+        {
+            "tool_id": "tool-fetch-debts",
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "parameter_type": "json",
+            "method": "GET",
+            "query_params": {},
+            "args_at_root": false,
+            "timeout_ms": 30000,
+            "name": "fetch_debts",
+            "description": "Busca todas as dívidas em aberto do cliente após o CPF ter sido validado.",
+            "response_variables": {
+                "total_divida": "data.total_debt",
+                "debt_ids": "data.debts[*].debt_id",
+                "qtd_debitos": "data.debt_count",
+                "debitos": "data.debts"
+            },
+            "type": "custom",
+            "url": "https://carbonless-surlily-clorinda.ngrok-free.dev/api/ura/devedor/{{cpf}}"
+        },
+        {
+            "tool_id": "tool-fetch-proposals",
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "parameter_type": "json",
+            "method": "GET",
+            "query_params": {},
+            "args_at_root": false,
+            "timeout_ms": 30000,
+            "name": "fetch_proposals",
+            "description": "Busca as propostas de negociação disponíveis (à vista e parceladas) para o CPF informado.",
+            "response_variables": {
+                "proposta_vista_vencimento": "data.proposals.cash.due_date",
+                "parcelamentos": "data.proposals.installments",
+                "plano_36x_id": "data.proposals.installments[2].plan_id",
+                "proposta_vista_desconto": "data.proposals.cash.discount_amount",
+                "plano_60x_nome": "data.proposals.installments[0].installments_number",
+                "plano_48x_parcela": "data.proposals.installments[1].value_per_installment",
+                "proposta_vista_valor": "data.proposals.cash.value",
+                "plano_60x_total": "data.proposals.installments[0].total_value",
+                "plano_48x_nome": "data.proposals.installments[1].installments_number",
+                "plano_36x_total": "data.proposals.installments[2].total_value",
+                "plano_48x_id": "data.proposals.installments[1].plan_id",
+                "plano_60x_id": "data.proposals.installments[0].plan_id",
+                "plano_36x_parcela": "data.proposals.installments[2].value_per_installment",
+                "plano_48x_total": "data.proposals.installments[1].total_value",
+                "plano_60x_parcela": "data.proposals.installments[0].value_per_installment",
+                "plano_36x_nome": "data.proposals.installments[2].installments_number"
+            },
+            "type": "custom",
+            "url": "https://carbonless-surlily-clorinda.ngrok-free.dev/api/ura/propostas/{{cpf}}"
+        },
+        {
+            "tool_id": "tool-confirm-agreement-vista",
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "parameter_type": "json",
+            "method": "POST",
+            "args_at_root": false,
+            "timeout_ms": 45000,
+            "name": "confirm_agreement_vista",
+            "description": "Confirma e registra formalmente o acordo de pagamento à vista.",
+            "response_variables": {
+                "codigo_acordo": "data.agreement.agreement_id",
+                "codigo_confirmacao": "data.agreement.confirmation_code",
+                "boleto_codigo": "data.payment_details.payment_methods.boleto.barcode",
+                "pix_chave": "data.payment_details.payment_methods.pix.pix_key",
+                "acordo_confirmado": "success"
+            },
+            "type": "custom",
+            "body": {
+                "cpf": "{{cpf}}",
+                "total_value": "{{proposta_vista_valor}}",
+                "debt_ids": "{{debt_ids}}",
+                "payment_type": "à vista"
+            },
+            "url": "https://carbonless-surlily-clorinda.ngrok-free.dev/api/ura/acordos"
+        },
+        {
+            "tool_id": "tool-confirm-agreement-60x",
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "parameter_type": "json",
+            "method": "POST",
+            "args_at_root": false,
+            "timeout_ms": 45000,
+            "name": "confirm_agreement_60x",
+            "description": "Confirma e registra formalmente o acordo de pagamento em 60 parcelas.",
+            "response_variables": {
+                "codigo_acordo": "data.agreement.agreement_id",
+                "codigo_confirmacao": "data.agreement.confirmation_code",
+                "boleto_codigo": "data.payment_details.payment_methods.boleto.barcode",
+                "pix_chave": "data.payment_details.payment_methods.pix.pix_key",
+                "acordo_confirmado": "success"
+            },
+            "type": "custom",
+            "body": {
+                "cpf": "{{cpf}}",
+                "total_value": "{{plano_60x_total}}",
+                "plan_id": "{{plano_60x_id}}",
+                "debt_ids": "{{debt_ids}}",
+                "payment_type": "parcelado"
+            },
+            "url": "https://carbonless-surlily-clorinda.ngrok-free.dev/api/ura/acordos"
+        },
+        {
+            "tool_id": "tool-confirm-agreement-48x",
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "parameter_type": "json",
+            "method": "POST",
+            "args_at_root": false,
+            "timeout_ms": 45000,
+            "name": "confirm_agreement_48x",
+            "description": "Confirma e registra formalmente o acordo de pagamento em 48 parcelas.",
+            "response_variables": {
+                "codigo_acordo": "data.agreement.agreement_id",
+                "codigo_confirmacao": "data.agreement.confirmation_code",
+                "boleto_codigo": "data.payment_details.payment_methods.boleto.barcode",
+                "pix_chave": "data.payment_details.payment_methods.pix.pix_key",
+                "acordo_confirmado": "success"
+            },
+            "type": "custom",
+            "body": {
+                "cpf": "{{cpf}}",
+                "total_value": "{{plano_48x_total}}",
+                "plan_id": "{{plano_48x_id}}",
+                "debt_ids": "{{debt_ids}}",
+                "payment_type": "parcelado"
+            },
+            "url": "https://carbonless-surlily-clorinda.ngrok-free.dev/api/ura/acordos"
+        },
+        {
+            "tool_id": "tool-confirm-agreement-36x",
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "parameter_type": "json",
+            "method": "POST",
+            "args_at_root": false,
+            "timeout_ms": 45000,
+            "name": "confirm_agreement_36x",
+            "description": "Confirma e registra formalmente o acordo de pagamento em 36 parcelas.",
+            "response_variables": {
+                "codigo_acordo": "data.agreement.agreement_id",
+                "codigo_confirmacao": "data.agreement.confirmation_code",
+                "boleto_codigo": "data.payment_details.payment_methods.boleto.barcode",
+                "pix_chave": "data.payment_details.payment_methods.pix.pix_key",
+                "acordo_confirmado": "success"
+            },
+            "type": "custom",
+            "body": {
+                "cpf": "{{cpf}}",
+                "total_value": "{{plano_36x_total}}",
+                "plan_id": "{{plano_36x_id}}",
+                "debt_ids": "{{debt_ids}}",
+                "payment_type": "parcelado"
+            },
+            "url": "https://carbonless-surlily-clorinda.ngrok-free.dev/api/ura/acordos"
+        },
+        {
+            "tool_id": "tool-escalate-supervisor",
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "parameter_type": "json",
+            "method": "POST",
+            "query_params": {},
+            "args_at_root": false,
+            "timeout_ms": 30000,
+            "name": "escalate_to_supervisor",
+            "description": "Transfere o atendimento para um supervisor humano.",
+            "response_variables": {
+                "ticket_id": "data.escalation.ticket_id",
+                "supervisor_disponivel": "data.transfer_details.supervisor_available",
+                "tempo_espera": "data.transfer_details.estimated_wait_time_formatted"
+            },
+            "type": "custom",
+            "url": "https://carbonless-surlily-clorinda.ngrok-free.dev/api/ura/escalar"
+        }
+    ],
+    "model_choice": {
+        "type": "cascading",
+        "model": "gemini-2.5-flash-lite",
+        "high_priority": false
+    },
+    "tool_call_strict_mode": true,
+    "kb_config": {
+        "top_k": 3,
+        "filter_score": 0.6
+    },
+    "begin_tag_display_position": {
+        "x": 0,
+        "y": 65
+    },
+    "is_published": false,
+    "is_transfer_cf": false
+}
