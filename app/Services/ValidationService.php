@@ -102,14 +102,44 @@ class ValidationService
             return null;
         }
 
+        $date = trim($date);
+
         // Try to parse various date formats
-        $formats = ['Y-m-d', 'd/m/Y', 'Y-m-d H:i:s', 'd/m/Y H:i:s'];
+        $formats = [
+            'Y-m-d',
+            'd/m/Y',
+            'd/m/y',
+            'm/d/Y',
+            'm/d/y',
+            'Y-m-d H:i:s',
+            'd/m/Y H:i:s',
+            'd-m-Y',
+            'd.m.Y',
+            'n/j/y',    // 1/20/86
+            'n/j/Y',    // 1/20/2086
+            'j/n/y',    // 20/1/86
+            'j/n/Y',    // 20/1/2086
+        ];
 
         foreach ($formats as $fmt) {
             $parsed = \DateTime::createFromFormat($fmt, $date);
             if ($parsed && $parsed->format($fmt) === $date) {
+                // Para anos com 2 dígitos, ajustar se ficou no futuro (ex: 86 → 2086 → 1986)
+                if ($parsed->format('Y') > date('Y')) {
+                    $parsed->modify('-100 years');
+                }
                 return $parsed->format('Y-m-d');
             }
+        }
+
+        // Fallback: tentar strtotime como última tentativa
+        $timestamp = strtotime($date);
+        if ($timestamp !== false) {
+            $parsed = new \DateTime('@' . $timestamp);
+            if ($parsed->format('Y') > date('Y')) {
+                $parsed->modify('-100 years');
+            }
+            return $parsed->format('Y-m-d');
         }
 
         return null;

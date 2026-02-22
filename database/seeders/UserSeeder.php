@@ -23,38 +23,27 @@ class UserSeeder extends Seeder
             return;
         }
 
-        // Admin
-        $admin = User::create([
-            'name' => 'Admin Dvelopers',
-            'email' => 'admin@dvelopers.com',
-            'password' => Hash::make('admin123'),
-            'role' => 'admin',
-            'active' => true,
-            'empresa_id' => $empresa->id,
-        ]);
-        $admin->generateApiToken();
+        $users = [
+            ['name' => 'Admin Dvelopers',   'email' => 'admin@dvelopers.com',      'password' => 'admin123',      'role' => 'admin'],
+            ['name' => 'Supervisor Teste',   'email' => 'supervisor@dvelopers.com', 'password' => 'supervisor123', 'role' => 'supervisor'],
+            ['name' => 'Operador Teste',     'email' => 'operador@dvelopers.com',   'password' => 'operador123',   'role' => 'operador'],
+        ];
 
-        // Supervisor
-        $supervisor = User::create([
-            'name' => 'Supervisor Teste',
-            'email' => 'supervisor@dvelopers.com',
-            'password' => Hash::make('supervisor123'),
-            'role' => 'supervisor',
-            'active' => true,
-            'empresa_id' => $empresa->id,
-        ]);
-        $supervisor->generateApiToken();
+        foreach ($users as $userData) {
+            if (User::withoutGlobalScopes()->where('email', $userData['email'])->exists()) {
+                continue;
+            }
 
-        // Operador
-        $operador = User::create([
-            'name' => 'Operador Teste',
-            'email' => 'operador@dvelopers.com',
-            'password' => Hash::make('operador123'),
-            'role' => 'operador',
-            'active' => true,
-            'empresa_id' => $empresa->id,
-        ]);
-        $operador->generateApiToken();
+            $user = User::create([
+                'name'       => $userData['name'],
+                'email'      => $userData['email'],
+                'password'   => Hash::make($userData['password']),
+                'role'       => $userData['role'],
+                'active'     => true,
+                'empresa_id' => $empresa->id,
+            ]);
+            $user->generateApiToken();
+        }
 
         $this->command->info('✅ Usuários criados:');
         $this->command->info('   Admin: admin@dvelopers.com / admin123');

@@ -555,6 +555,7 @@ class MailingController extends Controller
 
                     $contato = new Contato(array_merge($dadosProcessados, [
                         'mailing_id' => $mailing->id,
+                        'empresa_id' => $mailing->empresa_id,
                         'status'     => 'pendente',
                     ]));
 
@@ -804,8 +805,9 @@ class MailingController extends Controller
         try {
             DB::beginTransaction();
 
-            // Cria jobs para todos os contatos
-            $contatos = Contato::where('mailing_id', $mailing->id)
+            // Cria jobs para todos os contatos (sem Global Scope para garantir que encontra todos)
+            $contatos = Contato::withoutGlobalScopes()
+                ->where('mailing_id', $mailing->id)
                 ->where('status', 'pendente')
                 ->get();
 
