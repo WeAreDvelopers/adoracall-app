@@ -47,6 +47,9 @@ class ConfiguracaoController extends Controller
                 'telefone'       => $empresa->telefone,
                 'endereco'       => $empresa->endereco,
                 'logo_url'       => $empresa->logo_url,
+                'use_ai'         => (bool) $empresa->use_ai,
+                'ai_model'       => $empresa->ai_model,
+                'ai_prompt'      => $empresa->ai_prompt,
                 'configuracoes'  => [
                     'nome_credora'               => $configuracao->nome_credora,
                     'percentual_desconto_alto'   => $configuracao->percentual_desconto_alto,
@@ -91,13 +94,21 @@ class ConfiguracaoController extends Controller
             'configuracoes.max_parcelas'                 => 'nullable|integer|min:1|max:60',
             'configuracoes.valor_minimo_parcela'         => 'nullable|numeric|min:0',
 
-            // Integrações (Retell AI)
+            // IA
+            'use_ai'    => 'sometimes|boolean',
+            'ai_model'  => 'nullable|string|in:gpt-4o,gpt-4o-mini,gpt-4-turbo,gpt-3.5-turbo',
+            'ai_prompt' => 'nullable|string|max:5000',
+
+            // Integrações (Retell AI + OpenAI)
             'integracoes'                                       => 'sometimes|array',
             'integracoes.integracao_retell_api_key'             => 'nullable|string|max:500',
             'integracoes.integracao_retell_agent_id'            => 'nullable|string|max:255',
             'integracoes.integracao_retell_agent_id_sales'      => 'nullable|string|max:255',
             'integracoes.integracao_retell_webhook_secret'      => 'nullable|string|max:500',
             'integracoes.integracao_retell_from_number'         => 'nullable|string|max:20',
+            'integracoes.integracao_openai_api_key'             => 'nullable|string|max:500',
+            'integracoes.integracao_twilio_voice'               => 'nullable|string|max:100',
+            'integracoes.integracao_twilio_speech_rate'         => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -111,6 +122,18 @@ class ConfiguracaoController extends Controller
                 $empresa->{$campo} = $request->input($campo);
             }
         }
+
+        // Atualizar campos de IA
+        if ($request->has('use_ai')) {
+            $empresa->use_ai = (bool) $request->input('use_ai');
+        }
+        if ($request->has('ai_model')) {
+            $empresa->ai_model = $request->input('ai_model');
+        }
+        if ($request->has('ai_prompt')) {
+            $empresa->ai_prompt = $request->input('ai_prompt') ?: null;
+        }
+
         $empresa->save();
 
         // Atualizar configurações (termos da fila) na tabela empresa_configuracoes
@@ -164,6 +187,9 @@ class ConfiguracaoController extends Controller
                 'telefone'       => $empresa->telefone,
                 'endereco'       => $empresa->endereco,
                 'logo_url'       => $empresa->logo_url,
+                'use_ai'         => (bool) $empresa->use_ai,
+                'ai_model'       => $empresa->ai_model,
+                'ai_prompt'      => $empresa->ai_prompt,
                 'configuracoes'  => [
                     'nome_credora'               => $configuracao->nome_credora,
                     'percentual_desconto_alto'   => $configuracao->percentual_desconto_alto,

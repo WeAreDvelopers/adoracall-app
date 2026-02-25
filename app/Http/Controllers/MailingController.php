@@ -91,6 +91,25 @@ class MailingController extends Controller
             ')
             ->first();
 
+        $totalJobs = (int) ($stats->total ?? 0);
+
+        // Se não há QueueJobs ainda (antes da ativação), usar contagem de contatos importados
+        if ($totalJobs === 0) {
+            $totalContatos = Contato::withoutGlobalScopes()
+                ->where('mailing_id', $mailingId)
+                ->count();
+
+            return [
+                'total'        => $totalContatos,
+                'pendentes'    => $totalContatos,
+                'processando'  => 0,
+                'completados'  => 0,
+                'falhados'     => 0,
+                'processados'  => 0,
+                'taxa_sucesso' => 0.0,
+            ];
+        }
+
         $processados = ($stats->completados ?? 0) + ($stats->falhados ?? 0);
         $taxaSucesso = 0;
         if ($processados > 0) {
@@ -98,7 +117,7 @@ class MailingController extends Controller
         }
 
         return [
-            'total'        => (int) ($stats->total ?? 0),
+            'total'        => $totalJobs,
             'pendentes'    => (int) ($stats->pendentes ?? 0),
             'processando'  => (int) ($stats->processando ?? 0),
             'completados'  => (int) ($stats->completados ?? 0),
@@ -629,8 +648,12 @@ class MailingController extends Controller
             $tempoTotal = microtime(true) - $inicioImportacao;
 
             $mailing->arquivo_csv_path         = $nomeArquivo;
-            $mailing->total_contatos           = $stats['sucesso'];
-            $mailing->status                   = $stats['sucesso'] > 0 ? 'pronto' : 'rascunho';
+            // Acumula total de contatos (não sobrescreve com resultado da última importação)
+            $totalContatosReal = Contato::withoutGlobalScopes()
+                ->where('mailing_id', $mailing->id)
+                ->count();
+            $mailing->total_contatos           = $totalContatosReal;
+            $mailing->status                   = $totalContatosReal > 0 ? 'pronto' : 'rascunho';
             $mailing->ultimo_arquivo_importado = $nomeArquivo;
             $mailing->ultima_importacao_em     = \Carbon\Carbon::now();
             $mailing->estatisticas_importacao  = array_merge($stats, [
@@ -1010,6 +1033,76 @@ class MailingController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error'   => 'Erro ao fazer retry',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Reinicia a fila: reseta TODOS os jobs para pending e reativa o mailing.
+     * POST /api/filas_campanha/{id}/reiniciar
+     */
+    public function reiniciar($id)
+    {
+        $mailing = Mailing::find($id);
+
+        if (!$mailing) {
+            return response()->json(['error' => 'Mailing não encontrado'], 404);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Resetar todos os jobs existentes (completed, failed, processing) para pending
+            $jobsResetados = QueueJob::withoutGlobalScopes()
+                ->where('mailing_id', $mailing->id)
+                ->whereIn('status', ['completed', 'failed', 'processing'])
+                ->count();
+
+            QueueJob::withoutGlobalScopes()
+                ->where('mailing_id', $mailing->id)
+                ->whereIn('status', ['completed', 'failed', 'processing'])
+                ->update([
+                    'status'            => 'pending',
+                    'tentativas'        => 0,
+                    'proxima_tentativa' => \Carbon\Carbon::now(),
+                    'erro_mensagem'     => null,
+                    'resultado'         => null,
+                ]);
+
+            // Resetar contatos para 'pendente' (exceto os que já têm acordo)
+            Contato::withoutGlobalScopes()
+                ->where('mailing_id', $mailing->id)
+                ->whereNotIn('status', ['acordo_firmado'])
+                ->update(['status' => 'pendente']);
+
+            // Reativar mailing se não está ativo
+            if ($mailing->status !== 'ativo') {
+                $mailing->status = 'ativo';
+                $mailing->save();
+            }
+
+            $totalPending = QueueJob::withoutGlobalScopes()
+                ->where('mailing_id', $mailing->id)
+                ->where('status', 'pending')
+                ->count();
+
+            DB::commit();
+
+            \Log::info("[REINICIAR] Campanha {$mailing->id} reiniciada | {$jobsResetados} jobs resetados | {$totalPending} total pendentes");
+
+            return response()->json([
+                'message'        => 'Fila reiniciada com sucesso',
+                'jobs_resetados' => $jobsResetados,
+                'total_pending'  => $totalPending,
+                'mailing'        => $mailing,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error("[REINICIAR] Erro ao reiniciar campanha {$id}: " . $e->getMessage());
+            return response()->json([
+                'error'   => 'Erro ao reiniciar fila',
                 'message' => $e->getMessage(),
             ], 500);
         }

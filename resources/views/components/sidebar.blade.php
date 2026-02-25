@@ -61,6 +61,11 @@
                     <i class="fas fa-phone-alt w-4 text-center text-[13px]"></i>
                     <span>Hist&oacute;rico de Chamadas</span>
                 </a>
+
+                <a href="{{ route('contatos.index') }}" class="sidebar-item sidebar-submenu-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('contatos*') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <i class="fas fa-address-book w-4 text-center text-[13px]"></i>
+                    <span>Contatos Importados</span>
+                </a>
             </div>
         </div>
 

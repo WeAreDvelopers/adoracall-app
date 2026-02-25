@@ -15,11 +15,20 @@ class EmpresaIntegracao extends Model
         'retell_agent_id_sales',
         'retell_webhook_secret',
         'retell_from_number',
+        'twilio_account_sid',
+        'twilio_auth_token',
+        'twilio_from_number',
+        'twilio_voice',
+        'twilio_speech_rate',
+        'openai_api_key',
     ];
 
     protected $hidden = [
         'retell_api_key',
         'retell_webhook_secret',
+        'twilio_account_sid',
+        'twilio_auth_token',
+        'openai_api_key',
     ];
 
     /**
@@ -28,6 +37,17 @@ class EmpresaIntegracao extends Model
     private static array $camposEncriptados = [
         'retell_api_key',
         'retell_webhook_secret',
+        'twilio_account_sid',
+        'twilio_auth_token',
+        'openai_api_key',
+    ];
+
+    /**
+     * Campos que devem ser retornados em texto puro (sem mascaramento).
+     */
+    private static array $camposVisiveis = [
+        'twilio_voice',
+        'twilio_speech_rate',
     ];
 
     /**
@@ -39,6 +59,12 @@ class EmpresaIntegracao extends Model
         'retell_agent_id_sales' => 'integracao_retell_agent_id_sales',
         'retell_webhook_secret' => 'integracao_retell_webhook_secret',
         'retell_from_number'    => 'integracao_retell_from_number',
+        'twilio_account_sid'    => 'integracao_twilio_account_sid',
+        'twilio_auth_token'     => 'integracao_twilio_auth_token',
+        'twilio_from_number'    => 'integracao_twilio_from_number',
+        'twilio_voice'          => 'integracao_twilio_voice',
+        'twilio_speech_rate'    => 'integracao_twilio_speech_rate',
+        'openai_api_key'        => 'integracao_openai_api_key',
     ];
 
     public function empresa()
@@ -49,6 +75,11 @@ class EmpresaIntegracao extends Model
     public static function isEncrypted(string $field): bool
     {
         return in_array($field, self::$camposEncriptados);
+    }
+
+    public static function isVisible(string $field): bool
+    {
+        return in_array($field, self::$camposVisiveis);
     }
 
     public static function getCamposEncriptados(): array

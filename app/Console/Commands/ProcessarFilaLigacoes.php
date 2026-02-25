@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Models\QueueJob;
 use App\Models\Mailing;
 use App\Jobs\ProcessarContatoJob;
+use App\Jobs\ProcessarContatoIvrJob;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -86,8 +87,11 @@ class ProcessarFilaLigacoes extends Command
                 $job->status = 'processing';
                 $job->save();
 
-                // Executar o handle do job
-                $jobProcessor = new ProcessarContatoJob($job->id);
+                // Executar o handle do job (IVR ou Retell)
+                $useIvr = env('USE_IVR_MODE', true);
+                $jobProcessor = $useIvr
+                    ? new ProcessarContatoIvrJob($job->id)
+                    : new ProcessarContatoJob($job->id);
                 $jobProcessor->handle();
 
                 Log::debug("✅ [WORKER-JOB-PROCESSED] Job {$job->id} processado com sucesso (Contato: {$job->contato->nome})");

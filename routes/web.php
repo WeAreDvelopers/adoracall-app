@@ -58,6 +58,10 @@ $router->group(['prefix' => 'campanha'], function () use ($router) {
     $router->get('/{id}/visualizar', ['as' => 'campanha.visualizar', 'uses' => 'ViewController@visualizarCampanha']);
 });
 
+// ========== CONTATOS IMPORTADOS ==========
+$router->get('/contatos', ['as' => 'contatos.index', 'uses' => 'ContatoController@index']);
+$router->get('/contatos/{id}', ['as' => 'contatos.show', 'uses' => 'ContatoController@show']);
+
 // ========== CONFIGURAÇÕES DA EMPRESA ==========
 $router->get('/configuracoes', ['as' => 'configuracoes.index', 'uses' => 'ConfiguracaoController@index']);
 
@@ -96,6 +100,23 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         $router->group(['prefix' => 'twilio'], function () use ($router) {
             $router->post('/voice', 'TwilioController@voice');
             $router->post('/status', 'TwilioController@status');
+        });
+
+        // ========== IVR PROGRAMÁTICA (Twilio TwiML) ==========
+        // Webhooks públicos - Twilio chama de fora, sem autenticação
+        $router->group(['prefix' => 'ivr'], function () use ($router) {
+            $router->post('/welcome', 'UraIvrController@welcome');
+            $router->post('/confirm-identity', 'UraIvrController@confirmIdentity');
+            $router->post('/confirm-identity-retry', 'UraIvrController@confirmIdentityRetry');
+            $router->post('/verify-cpf', 'UraIvrController@verifyCpf');
+            $router->post('/debt-info', 'UraIvrController@debtInfo');
+            $router->post('/ask-proposals', 'UraIvrController@askProposals');
+            $router->post('/proposal-response', 'UraIvrController@proposalResponse');
+            $router->post('/fetch-debt', 'UraIvrController@fetchDebt');
+            $router->post('/repeat-options', 'UraIvrController@repeatOptions');
+            $router->post('/select', 'UraIvrController@select');
+            $router->post('/confirm', 'UraIvrController@confirm');
+            $router->post('/status', 'UraIvrController@status');
         });
 
         // ========== RETELL WEBHOOKS ==========
@@ -257,6 +278,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         $router->post('/{id}/retomar', 'MailingController@retomar');
         $router->post('/{id}/cancelar', 'MailingController@cancelar');
         $router->post('/{id}/retry-falhas', 'MailingController@retryFalhas');
+        $router->post('/{id}/reiniciar', 'MailingController@reiniciar');
 
         // Monitoramento de Importação
         $router->get('/{id}/import-logs', 'MailingController@getImportLogs');

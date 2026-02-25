@@ -394,6 +394,16 @@
             box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
         }
 
+        .btn-action-restart {
+            background: #00897b;
+            color: white;
+        }
+
+        .btn-action-restart:hover:not(:disabled) {
+            background: #00695c;
+            box-shadow: 0 2px 8px rgba(0, 137, 123, 0.3);
+        }
+
         .btn-action-stop {
             background: #f44336;
             color: white;
@@ -817,6 +827,12 @@
                     `<button class="btn-action btn-action-retry" id="btn-reprocessar-${mailingId}" onclick="reprocessarMailing(${mailingId})"><i class="fas fa-redo"></i> Reprocessar</button>`;
             }
 
+            // Botão Reiniciar (reseta tudo e reativa)
+            if (queue.status !== 'cancelado') {
+                buttons +=
+                    `<button class="btn-action btn-action-restart" id="btn-reiniciar-${mailingId}" onclick="showReiniciarConfirm(${mailingId}, '${queue.nome}')"><i class="fas fa-sync-alt"></i> Reiniciar</button>`;
+            }
+
             // Botão Parar
             if (queue.status !== 'concluido' && queue.status !== 'cancelado') {
                 buttons +=
@@ -1007,23 +1023,66 @@
             }
         }
 
+        function showReiniciarConfirm(mailingId, mailingName) {
+            document.getElementById('modalTitle').textContent = 'Reiniciar Fila?';
+            document.getElementById('modalMessage').textContent =
+                `Deseja reiniciar a fila "${mailingName}"? Todos os jobs serão resetados para pendente e a campanha será reativada. Contatos com acordo firmado não serão afetados.`;
+            pendingAction = {
+                action: 'reiniciar',
+                mailingId
+            };
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        async function reiniciarMailing(mailingId) {
+            try {
+                setButtonLoading(mailingId, 'reiniciar', true);
+
+                const response = await fetchWithAuth(`${API_BASE_URL}/filas_campanha/${mailingId}/reiniciar`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Erro ao reiniciar fila');
+                }
+
+                const data = await response.json();
+                console.log('[REINICIAR] Resposta:', data);
+
+                if (typeof feedback !== 'undefined') {
+                    feedback.success(`Fila reiniciada! ${data.jobs_resetados || 0} jobs resetados, ${data.total_pending || 0} pendentes.`);
+                }
+
+                await loadQueues();
+            } catch (error) {
+                console.error('[REINICIAR] Erro:', error);
+                if (typeof feedback !== 'undefined') {
+                    feedback.error(error.message || 'Erro ao reiniciar fila');
+                }
+            } finally {
+                setButtonLoading(mailingId, 'reiniciar', false);
+            }
+        }
+
         // Modal
         async function confirmAction() {
-            if (pendingAction && pendingAction.action === 'cancel') {
-                // Desabilitar botão de confirmação durante a ação
-                const confirmBtn = document.querySelector('.modal-btn-confirm');
-                const cancelBtn = document.querySelector('.modal-btn-cancel');
-                if (confirmBtn) confirmBtn.disabled = true;
-                if (cancelBtn) cancelBtn.disabled = true;
+            if (!pendingAction) return;
 
-                // Executar ação
+            const confirmBtn = document.querySelector('.modal-btn-confirm');
+            const cancelBtn = document.querySelector('.modal-btn-cancel');
+            if (confirmBtn) confirmBtn.disabled = true;
+            if (cancelBtn) cancelBtn.disabled = true;
+
+            if (pendingAction.action === 'cancel') {
                 await cancelMailing(pendingAction.mailingId);
-
-                // Reabilitar botões e fechar modal
-                if (confirmBtn) confirmBtn.disabled = false;
-                if (cancelBtn) cancelBtn.disabled = false;
-                closeModal();
+            } else if (pendingAction.action === 'reiniciar') {
+                await reiniciarMailing(pendingAction.mailingId);
             }
+
+            if (confirmBtn) confirmBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
+            closeModal();
         }
 
         function closeModal() {

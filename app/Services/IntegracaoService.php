@@ -64,7 +64,10 @@ class IntegracaoService
                 continue;
             }
 
-            if (EmpresaIntegracao::isEncrypted($dbCol)) {
+            if (EmpresaIntegracao::isVisible($dbCol)) {
+                // Campos não-sensíveis retornados em texto puro (ex: voz, velocidade)
+                $resultado[$apiKey] = $valor;
+            } elseif (EmpresaIntegracao::isEncrypted($dbCol)) {
                 try {
                     $valorReal = Crypt::decryptString($valor);
                     $resultado[$apiKey] = self::mask($valorReal);
@@ -77,6 +80,27 @@ class IntegracaoService
         }
 
         return $resultado;
+    }
+
+    /**
+     * Resolve credenciais Twilio para uma empresa específica.
+     * Fallback: se a empresa não tem credenciais, usa env() global.
+     */
+    public static function getTwilioCredentials($empresaId): array
+    {
+        $integracao = null;
+
+        if ($empresaId) {
+            $integracao = EmpresaIntegracao::where('empresa_id', $empresaId)->first();
+        }
+
+        return [
+            'twilio_account_sid' => self::decryptField($integracao, 'twilio_account_sid', env('TWILIO_ACCOUNT_SID')),
+            'twilio_auth_token'  => self::decryptField($integracao, 'twilio_auth_token', env('TWILIO_AUTH_TOKEN')),
+            'twilio_from_number' => self::normalizePhone($integracao->twilio_from_number ?? env('TWILIO_FROM_NUMBER')),
+            'twilio_voice'       => $integracao->twilio_voice ?? env('TWILIO_VOICE', 'Polly.Camila'),
+            'twilio_speech_rate' => $integracao->twilio_speech_rate ?? env('TWILIO_SPEECH_RATE'),
+        ];
     }
 
     /**

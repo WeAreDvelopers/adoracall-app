@@ -7,7 +7,19 @@
       "Bash(php artisan tinker:*)",
       "Bash(php artisan migrate:status:*)",
       "Bash(php:*)",
-      "Bash(docker-compose logs:*)"
+      "Bash(docker-compose logs:*)",
+      "Bash(mysql:*)",
+      "Bash(\"/c/Program Files/MySQL/MySQL Server 8.4/bin/mysql.exe\" -h 127.0.0.1 -P 3306 -u root -proot adoracall -e \":*)",
+      "Bash(\"/c/Program Files/MySQL/MySQL Server 8.4/bin/mysql.exe\" -h 127.0.0.1 -P 3306 -u root -proot adoracall -e \"DESCRIBE propostas_pagamento;\")",
+      "Bash(\"/c/Program Files/MySQL/MySQL Server 8.4/bin/mysql.exe\":*)",
+      "Bash(composer require:*)",
+      "Bash(test:*)",
+      "Bash(composer dump-autoload:*)"
+    ],
+    "additionalDirectories": [
+      "D:\\Google Drive Empresa\\Servidor\\Dvelopers\\Adora\\adoracall-app-laravel\\routes",
+      "D:\\Google Drive Empresa\\Servidor\\Dvelopers\\Adora\\adoracall-app-laravel\\config",
+      "D:\\Google Drive Empresa\\Servidor\\Dvelopers\\Adora\\adoracall-app-laravel"
     ]
   }
 }

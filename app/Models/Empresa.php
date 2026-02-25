@@ -22,12 +22,16 @@ class Empresa extends Model
         'endereco',
         'logo_url',
         'ativa',
+        'use_ai',
+        'ai_model',
+        'ai_prompt',
         'configuracoes',
         'max_usuarios',
     ];
 
     protected $casts = [
         'ativa' => 'boolean',
+        'use_ai' => 'boolean',
         'configuracoes' => 'array',
         'max_usuarios' => 'integer',
     ];

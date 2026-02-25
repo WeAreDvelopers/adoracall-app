@@ -201,6 +201,111 @@
                 </div>
             </div>
 
+            <!-- Card 3: Twilio IVR - Voz -->
+            <div class="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 class="text-base font-semibold text-slate-900 mb-4">
+                    <i class="fas fa-microphone text-brand-500 mr-2"></i>Twilio IVR — Voz e Velocidade
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">Define a voz e a velocidade da fala nas ligações automáticas via URA</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5" for="integracao_twilio_voice">
+                            Voz (Text-to-Speech)
+                        </label>
+                        <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors bg-white"
+                                id="integracao_twilio_voice">
+                            <option value="">Padrão (Polly.Camila)</option>
+                            <option value="Polly.Camila">Camila — Feminina Neural pt-BR (Recomendada)</option>
+                            <option value="Polly.Vitoria">Vitória — Feminina Standard pt-BR</option>
+                            <option value="Polly.Ricardo">Ricardo — Masculino Standard pt-BR</option>
+                        </select>
+                        <p class="text-xs text-slate-400 mt-1">Vozes Amazon Polly disponíveis para português do Brasil</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5" for="integracao_twilio_speech_rate">
+                            Velocidade da Fala
+                        </label>
+                        <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors bg-white"
+                                id="integracao_twilio_speech_rate">
+                            <option value="">Padrão (medium)</option>
+                            <option value="x-slow">Muito Lenta</option>
+                            <option value="slow">Lenta</option>
+                            <option value="medium">Média</option>
+                            <option value="fast">Rápida</option>
+                            <option value="x-fast">Muito Rápida</option>
+                            <option value="80%">80% — Um pouco mais lenta</option>
+                            <option value="90%">90% — Levemente mais lenta</option>
+                            <option value="110%">110% — Levemente mais rápida</option>
+                            <option value="120%">120% — Um pouco mais rápida</option>
+                        </select>
+                        <p class="text-xs text-slate-400 mt-1">Utiliza SSML prosody — compatível com vozes Polly</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: Inteligência Artificial -->
+            <div class="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 class="text-base font-semibold text-slate-900 mb-4">
+                    <i class="fas fa-brain text-purple-500 mr-2"></i>Inteligência Artificial (IVR)
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">Ative a IA para gerar mensagens mais naturais durante as ligações de cobrança via IVR</p>
+
+                <!-- Toggle IA -->
+                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg mb-4">
+                    <div>
+                        <p class="text-sm font-medium text-slate-700">Ativar IA nas ligações</p>
+                        <p class="text-xs text-slate-400 mt-0.5">Quando ativada, a IA gera mensagens personalizadas. Se falhar, usa mensagem padrão automaticamente.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="use_ai" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                    </label>
+                </div>
+
+                <!-- Campos condicionais (mostrar quando IA ativada) -->
+                <div id="aiFieldsContainer" class="space-y-4 hidden">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1.5" for="ai_model">
+                                Modelo de IA
+                            </label>
+                            <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors bg-white"
+                                    id="ai_model">
+                                <option value="gpt-4o">GPT-4o (Recomendado)</option>
+                                <option value="gpt-4o-mini">GPT-4o Mini (Mais rapido)</option>
+                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Economico)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1.5" for="integracao_openai_api_key">
+                                OpenAI API Key
+                            </label>
+                            <div class="relative">
+                                <input class="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors"
+                                       type="password" id="integracao_openai_api_key" placeholder="sk-••••••••">
+                                <button type="button" class="toggle-pwd absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-slate-600" onclick="togglePasswordVisibility('integracao_openai_api_key')">
+                                    <i class="fas fa-eye text-sm"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">Se vazio, usa a chave global do servidor</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5" for="ai_prompt">
+                            <i class="fas fa-scroll text-purple-400 mr-1"></i>Script / Prompt da IA
+                        </label>
+                        <textarea class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors font-mono"
+                                  id="ai_prompt" rows="8" placeholder="Deixe vazio para usar o prompt padr&#227;o (tom amig&#225;vel e acolhedor). Personalize aqui o comportamento e estilo da Ang&#233;lica."></textarea>
+                        <p class="text-xs text-slate-400 mt-1">Define a personalidade e regras da IA nas ligacoes. Se vazio, usa o prompt padrao amigavel.</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Card 4: Info Note -->
             <div class="bg-amber-50 rounded-xl border border-amber-200 p-6">
                 <h3 class="text-base font-semibold text-amber-900 mb-3">
@@ -349,28 +454,49 @@
         document.getElementById('integracao_retell_agent_id_sales').value = integracoes.integracao_retell_agent_id_sales || '';
         document.getElementById('integracao_retell_webhook_secret').value = integracoes.integracao_retell_webhook_secret || '';
         document.getElementById('integracao_retell_from_number').value = integracoes.integracao_retell_from_number || '';
+        document.getElementById('integracao_openai_api_key').value = integracoes.integracao_openai_api_key || '';
+        document.getElementById('integracao_twilio_voice').value = integracoes.integracao_twilio_voice || '';
+        document.getElementById('integracao_twilio_speech_rate').value = integracoes.integracao_twilio_speech_rate || '';
 
-        updateStatusIntegracao(integracoes);
+        // IA
+        const useAi = !!empresa.use_ai;
+        document.getElementById('use_ai').checked = useAi;
+        document.getElementById('ai_model').value = empresa.ai_model || 'gpt-4o';
+        document.getElementById('ai_prompt').value = empresa.ai_prompt || '';
+        toggleAiFields(useAi);
+
+        updateStatusIntegracao(integracoes, useAi);
 
         // Show content, hide loading
         document.getElementById('loadingState').classList.add('hidden');
         document.getElementById('configContent').classList.remove('hidden');
     }
 
-    function updateStatusIntegracao(integracoes) {
+    function toggleAiFields(show) {
+        const container = document.getElementById('aiFieldsContainer');
+        container.classList.toggle('hidden', !show);
+    }
+
+    function updateStatusIntegracao(integracoes, useAi) {
         const statusContainer = document.getElementById('statusIntegracao');
         const statusTexto = document.getElementById('statusIntegracaoTexto');
         const statusDetalhe = document.getElementById('statusIntegracaoDetalhe');
 
         const hasRetell = !!(integracoes.integracao_retell_api_key || integracoes.integracao_retell_agent_id);
+        const hasOpenAi = !!(integracoes.integracao_openai_api_key);
 
-        if (hasRetell) {
+        const servicos = [];
+        if (hasRetell) servicos.push('Retell AI');
+        if (hasOpenAi) servicos.push('OpenAI');
+        if (useAi) servicos.push('IA Ativa');
+
+        if (servicos.length > 0) {
             statusContainer.className = 'bg-emerald-50 rounded-xl border border-emerald-200 p-4 flex items-center gap-3';
             statusContainer.querySelector('i').className = 'fas fa-check-circle text-emerald-500 text-lg';
             statusTexto.className = 'text-sm font-medium text-emerald-800';
             statusDetalhe.className = 'text-xs text-emerald-600 mt-0.5';
-            statusTexto.textContent = 'Credenciais próprias configuradas';
-            statusDetalhe.textContent = 'Usando credenciais da empresa para: Retell AI';
+            statusTexto.textContent = 'Credenciais configuradas';
+            statusDetalhe.textContent = 'Usando credenciais da empresa para: ' + servicos.join(', ');
         } else {
             statusContainer.className = 'bg-blue-50 rounded-xl border border-blue-200 p-4 flex items-center gap-3';
             statusContainer.querySelector('i').className = 'fas fa-info-circle text-blue-500 text-lg';
@@ -476,12 +602,18 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Salvando...';
 
             const formData = {
+                use_ai: document.getElementById('use_ai').checked,
+                ai_model: document.getElementById('ai_model').value,
+                ai_prompt: document.getElementById('ai_prompt').value || null,
                 integracoes: {
                     integracao_retell_api_key: document.getElementById('integracao_retell_api_key').value,
                     integracao_retell_agent_id: document.getElementById('integracao_retell_agent_id').value,
                     integracao_retell_agent_id_sales: document.getElementById('integracao_retell_agent_id_sales').value,
                     integracao_retell_webhook_secret: document.getElementById('integracao_retell_webhook_secret').value,
                     integracao_retell_from_number: document.getElementById('integracao_retell_from_number').value,
+                    integracao_openai_api_key: document.getElementById('integracao_openai_api_key').value,
+                    integracao_twilio_voice: document.getElementById('integracao_twilio_voice').value,
+                    integracao_twilio_speech_rate: document.getElementById('integracao_twilio_speech_rate').value,
                 }
             };
 
@@ -496,8 +628,11 @@
                 // Update local data and status indicator
                 if (empresaData) {
                     empresaData.integracoes = formData.integracoes;
+                    empresaData.use_ai = formData.use_ai;
+                    empresaData.ai_model = formData.ai_model;
+                    empresaData.ai_prompt = formData.ai_prompt;
                 }
-                updateStatusIntegracao(formData.integracoes);
+                updateStatusIntegracao(formData.integracoes, formData.use_ai);
             } else {
                 showAlert(data.message || 'Erro ao salvar integrações', 'error');
             }
@@ -520,6 +655,11 @@
         document.getElementById('perfilForm').addEventListener('submit', salvarPerfil);
         document.getElementById('retellForm').addEventListener('submit', salvarRetell);
         document.getElementById('integracoesForm').addEventListener('submit', salvarIntegracoes);
+
+        // Toggle IA fields visibility
+        document.getElementById('use_ai').addEventListener('change', function() {
+            toggleAiFields(this.checked);
+        });
     });
 </script>
 @endpush
