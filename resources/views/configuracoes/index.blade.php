@@ -35,6 +35,10 @@
                 class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-500 hover:text-slate-700">
                 <i class="fas fa-plug mr-1.5"></i>Integrações
             </button>
+            <button onclick="switchTab('diagnostico')" id="tabDiagnostico"
+                class="tab-btn px-4 py-2 rounded-md text-sm font-medium transition-colors text-slate-500 hover:text-slate-700">
+                <i class="fas fa-stethoscope mr-1.5"></i>Diagnóstico
+            </button>
         </div>
 
         <!-- Tab: Perfil da Empresa -->
@@ -88,6 +92,49 @@
                 </div>
             </div>
 
+            <!-- Card: Configurações da Ligação -->
+            <div class="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 class="text-base font-semibold text-slate-900 mb-4">
+                    <i class="fas fa-phone-alt text-brand-500 mr-2"></i>Configurações da Ligação
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">Como a atendente virtual se apresenta durante as ligações</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5" for="modo_ligacao">
+                            Modo de Ligação
+                        </label>
+                        <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors bg-white"
+                                id="modo_ligacao">
+                            <option value="ivr">IVR (Twilio) — Fluxo programático</option>
+                            <option value="retell">Retell AI — Agente inteligente</option>
+                        </select>
+                        <p class="text-xs text-slate-400 mt-1">IVR usa fluxo com menus e DTMF/voz. Retell usa IA conversacional.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5" for="nome_atendente">
+                            Nome da Atendente Virtual
+                        </label>
+                        <input class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors"
+                               type="text" id="nome_atendente" name="nome_atendente" placeholder="Ex: Angélica" maxlength="100">
+                        <p class="text-xs text-slate-400 mt-1">Se vazio, será usado "Angélica"</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5" for="artigo_empresa">
+                            Artigo da Empresa
+                        </label>
+                        <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors bg-white"
+                                id="artigo_empresa">
+                            <option value="a">A (feminino) — Ex: da Alfa Serviços</option>
+                            <option value="o">O (masculino) — Ex: do Banco Inter</option>
+                        </select>
+                        <p class="text-xs text-slate-400 mt-1">Define se usa "da" ou "do" antes do nome da credora</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="flex justify-end">
                 <button type="submit" id="btnSalvarPerfil" class="px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg text-sm transition-colors shadow-sm">
                     <i class="fas fa-save mr-1"></i> Salvar Perfil
@@ -110,7 +157,7 @@
                         </label>
                         <input class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors"
                                type="text" id="nome_credora" name="nome_credora" placeholder="Ex: Alfa Serviços Financeiros">
-                        <p class="text-xs text-slate-400 mt-1">Se vazio, será usado o nome da empresa cadastrado no perfil</p>
+                        <p class="text-xs text-slate-400 mt-1">Se vazio, será usado o nome da empresa do perfil</p>
                     </div>
                 </div>
             </div>
@@ -215,12 +262,23 @@
                         </label>
                         <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors bg-white"
                                 id="integracao_twilio_voice">
-                            <option value="">Padrão (Polly.Camila)</option>
-                            <option value="Polly.Camila">Camila — Feminina Neural pt-BR (Recomendada)</option>
-                            <option value="Polly.Vitoria">Vitória — Feminina Standard pt-BR</option>
-                            <option value="Polly.Ricardo">Ricardo — Masculino Standard pt-BR</option>
+                            <option value="">Padrão (Google Neural2-A)</option>
+                            <optgroup label="Google Neural2 (Recomendadas)">
+                                <option value="Google.pt-BR-Neural2-A">Neural2-A — Feminina (Recomendada)</option>
+                                <option value="Google.pt-BR-Neural2-B">Neural2-B — Masculina</option>
+                                <option value="Google.pt-BR-Neural2-C">Neural2-C — Feminina</option>
+                            </optgroup>
+                            <optgroup label="Google WaveNet">
+                                <option value="Google.pt-BR-Wavenet-A">WaveNet-A — Feminina</option>
+                                <option value="Google.pt-BR-Wavenet-B">WaveNet-B — Masculina</option>
+                            </optgroup>
+                            <optgroup label="Amazon Polly (Legado)">
+                                <option value="Polly.Camila">Camila — Feminina Neural</option>
+                                <option value="Polly.Vitoria">Vitória — Feminina Standard</option>
+                                <option value="Polly.Ricardo">Ricardo — Masculino Standard</option>
+                            </optgroup>
                         </select>
-                        <p class="text-xs text-slate-400 mt-1">Vozes Amazon Polly disponíveis para português do Brasil</p>
+                        <p class="text-xs text-slate-400 mt-1">Vozes Google Neural2 oferecem qualidade superior e mais naturalidade</p>
                     </div>
 
                     <div>
@@ -323,6 +381,177 @@
                 </button>
             </div>
         </form>
+
+        <!-- Tab: Diagnóstico -->
+        <div id="diagnosticoTab" class="space-y-6 hidden">
+            <div class="bg-white rounded-xl border border-slate-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-base font-semibold text-slate-900">
+                            <i class="fas fa-stethoscope text-brand-500 mr-2"></i>Diagnóstico do Sistema
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-1">Visualize como o worker resolve as configurações de ligação da sua empresa</p>
+                    </div>
+                    <button onclick="loadDiagnostico()" id="btnDiagnostico"
+                        class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg text-sm transition-colors shadow-sm">
+                        <i class="fas fa-sync-alt mr-1"></i> Atualizar
+                    </button>
+                </div>
+
+                <div id="diagnosticoLoading" class="text-center py-8 hidden">
+                    <i class="fas fa-spinner fa-spin text-2xl text-brand-500"></i>
+                    <p class="mt-2 text-sm text-slate-500">Consultando configurações e APIs externas...</p>
+                </div>
+
+                <div id="diagnosticoContent" class="hidden">
+                    <!-- Modo de Ligação -->
+                    <div class="mb-6">
+                        <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-phone-alt text-slate-400"></i> Modo de Ligação
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">Modo ativo</div>
+                                <div id="diagModo" class="text-sm font-semibold"></div>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">Origem da configuração</div>
+                                <div id="diagModoOrigem" class="text-sm font-medium text-slate-700"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Retell -->
+                    <div class="mb-6">
+                        <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-robot text-slate-400"></i> Retell AI
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">Agent ID</div>
+                                <div id="diagAgentId" class="text-sm font-mono text-slate-700"></div>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">Agent ID - Origem</div>
+                                <div id="diagAgentIdOrigem" class="text-sm font-medium text-slate-700"></div>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">API Key</div>
+                                <div id="diagApiKey" class="text-sm font-medium text-slate-700"></div>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">Número de origem</div>
+                                <div id="diagFromNumber" class="text-sm font-mono text-slate-700"></div>
+                            </div>
+                        </div>
+
+                        <!-- Agent Info (da API Retell) -->
+                        <div id="diagAgentInfoContainer" class="mt-3 hidden">
+                            <div class="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1">
+                                <i class="fas fa-cloud"></i> Dados do Agente (via API Retell)
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                    <div class="text-xs text-emerald-600 mb-1">Nome do Agente</div>
+                                    <div id="diagAgentName" class="text-sm font-semibold text-emerald-800"></div>
+                                </div>
+                                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                    <div class="text-xs text-emerald-600 mb-1">Versão</div>
+                                    <div id="diagAgentVersion" class="text-sm font-semibold text-emerald-800"></div>
+                                </div>
+                                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                    <div class="text-xs text-emerald-600 mb-1">Voz</div>
+                                    <div id="diagAgentVoice" class="text-sm font-semibold text-emerald-800"></div>
+                                </div>
+                                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                    <div class="text-xs text-emerald-600 mb-1">Idioma</div>
+                                    <div id="diagAgentLang" class="text-sm font-semibold text-emerald-800"></div>
+                                </div>
+                                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                    <div class="text-xs text-emerald-600 mb-1">LLM ID</div>
+                                    <div id="diagAgentLlm" class="text-sm font-mono text-emerald-800 text-xs break-all"></div>
+                                </div>
+                                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                    <div class="text-xs text-emerald-600 mb-1">Última modificação</div>
+                                    <div id="diagAgentModified" class="text-sm font-semibold text-emerald-800"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="diagRetellErro" class="mt-3 hidden">
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <div class="text-xs text-red-600 mb-1"><i class="fas fa-exclamation-triangle mr-1"></i>Erro ao consultar Retell API</div>
+                                <div id="diagRetellErroMsg" class="text-sm text-red-700"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Twilio (se IVR) -->
+                    <div id="diagTwilioContainer" class="mb-6 hidden">
+                        <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-phone text-slate-400"></i> Twilio (IVR)
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">Número de origem</div>
+                                <div id="diagTwilioFrom" class="text-sm font-mono text-slate-700"></div>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">Voz</div>
+                                <div id="diagTwilioVoice" class="text-sm font-medium text-slate-700"></div>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">Credenciais</div>
+                                <div id="diagTwilioCreds" class="text-sm font-medium text-slate-700"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Config Status -->
+                    <div class="mb-6">
+                        <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-database text-slate-400"></i> Status do Banco
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">empresa_configuracoes</div>
+                                <div id="diagConfigExiste" class="text-sm font-medium"></div>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">empresa_integracoes</div>
+                                <div id="diagIntegExiste" class="text-sm font-medium"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Env Fallbacks -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                            <i class="fas fa-server text-slate-400"></i> Fallbacks do Servidor (.env)
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">USE_IVR_MODE</div>
+                                <div id="diagEnvIvr" class="text-sm font-mono text-slate-700"></div>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">RETELL_AGENT_ID</div>
+                                <div id="diagEnvAgentId" class="text-sm font-mono text-slate-700 break-all"></div>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3">
+                                <div class="text-xs text-slate-500 mb-1">RETELL_API_KEY</div>
+                                <div id="diagEnvApiKey" class="text-sm font-medium text-slate-700"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="diagnosticoEmpty" class="text-center py-8">
+                    <i class="fas fa-stethoscope text-3xl text-slate-300"></i>
+                    <p class="mt-2 text-sm text-slate-500">Clique em "Atualizar" para carregar o diagnóstico</p>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -336,7 +565,7 @@
             btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
             btn.classList.add('text-slate-500', 'hover:text-slate-700');
         });
-        const tabMap = { perfil: 'tabPerfil', retell: 'tabRetell', integracoes: 'tabIntegracoes' };
+        const tabMap = { perfil: 'tabPerfil', retell: 'tabRetell', integracoes: 'tabIntegracoes', diagnostico: 'tabDiagnostico' };
         const activeBtn = document.getElementById(tabMap[tab]);
         activeBtn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
         activeBtn.classList.remove('text-slate-500', 'hover:text-slate-700');
@@ -344,6 +573,9 @@
         document.getElementById('perfilForm').classList.toggle('hidden', tab !== 'perfil');
         document.getElementById('retellForm').classList.toggle('hidden', tab !== 'retell');
         document.getElementById('integracoesForm').classList.toggle('hidden', tab !== 'integracoes');
+        document.getElementById('diagnosticoTab').classList.toggle('hidden', tab !== 'diagnostico');
+
+        if (tab === 'diagnostico') loadDiagnostico();
     }
 
     // ========== FORMATTERS ==========
@@ -441,6 +673,9 @@
         // Configurações Retell
         const config = empresa.configuracoes || {};
         document.getElementById('nome_credora').value = config.nome_credora || '';
+        document.getElementById('nome_atendente').value = config.nome_atendente || '';
+        document.getElementById('artigo_empresa').value = config.artigo_empresa || 'a';
+        document.getElementById('modo_ligacao').value = config.modo_ligacao || 'ivr';
         document.getElementById('percentual_desconto_alto').value = config.percentual_desconto_alto ?? 10;
         document.getElementById('percentual_desconto_baixo').value = config.percentual_desconto_baixo ?? 5;
         document.getElementById('limite_valor_desconto_alto').value = config.limite_valor_desconto_alto ?? 500;
@@ -523,6 +758,11 @@
                 telefone: document.getElementById('telefone').value.replace(/\D/g, '') || null,
                 endereco: document.getElementById('endereco').value.trim() || null,
                 logo_url: document.getElementById('logo_url').value.trim() || null,
+                configuracoes: {
+                    nome_atendente: document.getElementById('nome_atendente').value.trim() || null,
+                    artigo_empresa: document.getElementById('artigo_empresa').value || 'a',
+                    modo_ligacao: document.getElementById('modo_ligacao').value || 'ivr',
+                },
             };
 
             if (!formData.nome) {
@@ -646,6 +886,119 @@
     function resetBtn(btn, html) {
         btn.disabled = false;
         btn.innerHTML = html;
+    }
+
+    // ========== DIAGNÓSTICO ==========
+    async function loadDiagnostico() {
+        const loading = document.getElementById('diagnosticoLoading');
+        const content = document.getElementById('diagnosticoContent');
+        const empty = document.getElementById('diagnosticoEmpty');
+        const btn = document.getElementById('btnDiagnostico');
+
+        loading.classList.remove('hidden');
+        content.classList.add('hidden');
+        empty.classList.add('hidden');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Consultando...';
+
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}/configuracoes/diagnostico`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Erro ao carregar diagnóstico');
+            }
+
+            const d = data.data;
+            populateDiagnostico(d);
+            content.classList.remove('hidden');
+        } catch (error) {
+            console.error('[DIAGNOSTICO] Erro:', error);
+            empty.classList.remove('hidden');
+            empty.innerHTML = `
+                <i class="fas fa-exclamation-triangle text-3xl text-red-300"></i>
+                <p class="mt-2 text-sm text-red-500">${error.message}</p>
+            `;
+        } finally {
+            loading.classList.add('hidden');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sync-alt mr-1"></i> Atualizar';
+        }
+    }
+
+    function populateDiagnostico(d) {
+        // Modo de ligação
+        const modo = d.modo_ligacao?.valor || 'desconhecido';
+        const isRetell = modo === 'retell';
+        document.getElementById('diagModo').innerHTML = isRetell
+            ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800"><i class="fas fa-robot"></i> Retell AI</span>'
+            : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800"><i class="fas fa-phone"></i> IVR (Twilio)</span>';
+        document.getElementById('diagModoOrigem').textContent = d.modo_ligacao?.origem || '-';
+
+        // Retell
+        document.getElementById('diagAgentId').textContent = d.retell?.agent_id || 'Não configurado';
+        document.getElementById('diagAgentIdOrigem').textContent = d.retell?.agent_id_origem || '-';
+        document.getElementById('diagApiKey').innerHTML = d.retell?.has_api_key
+            ? '<span class="text-emerald-600"><i class="fas fa-check-circle mr-1"></i>Configurada</span>'
+            : '<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Não encontrada</span>';
+        document.getElementById('diagFromNumber').textContent = d.retell?.from_number || 'Não configurado';
+
+        // Agent info
+        const agentInfo = d.retell?.agent_info;
+        const agentInfoContainer = document.getElementById('diagAgentInfoContainer');
+        if (agentInfo) {
+            agentInfoContainer.classList.remove('hidden');
+            document.getElementById('diagAgentName').textContent = agentInfo.agent_name || '-';
+            document.getElementById('diagAgentVersion').textContent = agentInfo.version ?? '-';
+            document.getElementById('diagAgentVoice').textContent = agentInfo.voice_id || '-';
+            document.getElementById('diagAgentLang').textContent = agentInfo.language || '-';
+            document.getElementById('diagAgentLlm').textContent = agentInfo.llm_id || '-';
+            if (agentInfo.last_modified) {
+                const dt = new Date(agentInfo.last_modified);
+                document.getElementById('diagAgentModified').textContent = dt.toLocaleString('pt-BR');
+            } else {
+                document.getElementById('diagAgentModified').textContent = '-';
+            }
+        } else {
+            agentInfoContainer.classList.add('hidden');
+        }
+
+        // Retell erro
+        const erroContainer = document.getElementById('diagRetellErro');
+        if (d.retell?.erro) {
+            erroContainer.classList.remove('hidden');
+            document.getElementById('diagRetellErroMsg').textContent = d.retell.erro;
+        } else {
+            erroContainer.classList.add('hidden');
+        }
+
+        // Twilio
+        const twilioContainer = document.getElementById('diagTwilioContainer');
+        if (d.twilio) {
+            twilioContainer.classList.remove('hidden');
+            document.getElementById('diagTwilioFrom').textContent = d.twilio.from_number || '-';
+            document.getElementById('diagTwilioVoice').textContent = d.twilio.voice || '-';
+            const hasSid = d.twilio.has_sid;
+            const hasToken = d.twilio.has_token;
+            document.getElementById('diagTwilioCreds').innerHTML = (hasSid && hasToken)
+                ? '<span class="text-emerald-600"><i class="fas fa-check-circle mr-1"></i>SID + Token OK</span>'
+                : '<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Faltando ' + (!hasSid ? 'SID ' : '') + (!hasToken ? 'Token' : '') + '</span>';
+        } else {
+            twilioContainer.classList.add('hidden');
+        }
+
+        // Config status
+        const checkHtml = '<span class="text-emerald-600"><i class="fas fa-check-circle mr-1"></i>Existe</span>';
+        const xHtml = '<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Não existe</span>';
+        document.getElementById('diagConfigExiste').innerHTML = d.config_existe?.empresa_configuracoes ? checkHtml : xHtml;
+        document.getElementById('diagIntegExiste').innerHTML = d.config_existe?.empresa_integracoes ? checkHtml : xHtml;
+
+        // Env fallbacks
+        document.getElementById('diagEnvIvr').textContent = String(d.env_fallbacks?.USE_IVR_MODE ?? '-');
+        document.getElementById('diagEnvAgentId').textContent = d.env_fallbacks?.RETELL_AGENT_ID || '-';
+        document.getElementById('diagEnvApiKey').innerHTML = d.env_fallbacks?.has_RETELL_API_KEY
+            ? '<span class="text-emerald-600"><i class="fas fa-check-circle mr-1"></i>Definida</span>'
+            : '<span class="text-amber-600"><i class="fas fa-minus-circle mr-1"></i>Não definida</span>';
     }
 
     // ========== INIT ==========

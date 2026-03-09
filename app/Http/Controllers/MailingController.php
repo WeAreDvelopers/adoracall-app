@@ -1053,28 +1053,37 @@ class MailingController extends Controller
         try {
             DB::beginTransaction();
 
-            // Resetar todos os jobs existentes (completed, failed, processing) para pending
+            // Resetar TODOS os jobs (qualquer status exceto pending) para pending
             $jobsResetados = QueueJob::withoutGlobalScopes()
                 ->where('mailing_id', $mailing->id)
-                ->whereIn('status', ['completed', 'failed', 'processing'])
+                ->where('status', '!=', 'pending')
                 ->count();
 
             QueueJob::withoutGlobalScopes()
                 ->where('mailing_id', $mailing->id)
-                ->whereIn('status', ['completed', 'failed', 'processing'])
+                ->where('status', '!=', 'pending')
                 ->update([
                     'status'            => 'pending',
                     'tentativas'        => 0,
                     'proxima_tentativa' => \Carbon\Carbon::now(),
                     'erro_mensagem'     => null,
                     'resultado'         => null,
+                    'worker_id'         => null,
+                    'completed_at'      => null,
                 ]);
 
-            // Resetar contatos para 'pendente' (exceto os que já têm acordo)
+            // Resetar contatos para 'pendente' e zerar tentativas (exceto os que já têm acordo)
             Contato::withoutGlobalScopes()
                 ->where('mailing_id', $mailing->id)
                 ->whereNotIn('status', ['acordo_firmado'])
-                ->update(['status' => 'pendente']);
+                ->update([
+                    'status'            => 'pendente',
+                    'tentativas'        => 0,
+                    'tentativas_contato' => 0,
+                    'ultima_tentativa'  => null,
+                    'ultima_ligacao'    => null,
+                    'resultado'         => null,
+                ]);
 
             // Reativar mailing se não está ativo
             if ($mailing->status !== 'ativo') {

@@ -7,8 +7,10 @@ use App\Models\EmpresaConfiguracao;
 use App\Models\EmpresaIntegracao;
 use App\Services\ApiResponseService;
 use App\Services\IntegracaoService;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class ConfiguracaoController extends Controller
@@ -52,6 +54,9 @@ class ConfiguracaoController extends Controller
                 'ai_prompt'      => $empresa->ai_prompt,
                 'configuracoes'  => [
                     'nome_credora'               => $configuracao->nome_credora,
+                    'nome_atendente'             => $configuracao->nome_atendente,
+                    'artigo_empresa'             => $configuracao->artigo_empresa,
+                    'modo_ligacao'               => $configuracao->modo_ligacao ?? 'ivr',
                     'percentual_desconto_alto'   => $configuracao->percentual_desconto_alto,
                     'percentual_desconto_baixo'  => $configuracao->percentual_desconto_baixo,
                     'limite_valor_desconto_alto'  => $configuracao->limite_valor_desconto_alto,
@@ -88,6 +93,9 @@ class ConfiguracaoController extends Controller
             // Configurações (termos da fila)
             'configuracoes'                              => 'sometimes|array',
             'configuracoes.nome_credora'                 => 'nullable|string|max:255',
+            'configuracoes.nome_atendente'               => 'nullable|string|max:100',
+            'configuracoes.artigo_empresa'               => 'nullable|string|in:a,o',
+            'configuracoes.modo_ligacao'                 => 'nullable|string|in:ivr,retell',
             'configuracoes.percentual_desconto_alto'     => 'nullable|numeric|min:0|max:100',
             'configuracoes.percentual_desconto_baixo'    => 'nullable|numeric|min:0|max:100',
             'configuracoes.limite_valor_desconto_alto'   => 'nullable|numeric|min:0',
@@ -192,6 +200,9 @@ class ConfiguracaoController extends Controller
                 'ai_prompt'      => $empresa->ai_prompt,
                 'configuracoes'  => [
                     'nome_credora'               => $configuracao->nome_credora,
+                    'nome_atendente'             => $configuracao->nome_atendente,
+                    'artigo_empresa'             => $configuracao->artigo_empresa,
+                    'modo_ligacao'               => $configuracao->modo_ligacao ?? 'ivr',
                     'percentual_desconto_alto'   => $configuracao->percentual_desconto_alto,
                     'percentual_desconto_baixo'  => $configuracao->percentual_desconto_baixo,
                     'limite_valor_desconto_alto'  => $configuracao->limite_valor_desconto_alto,
@@ -202,5 +213,124 @@ class ConfiguracaoController extends Controller
                 'has_own_credentials' => IntegracaoService::hasOwnCredentials($empresa->id),
             ],
         ], 'Configurações atualizadas com sucesso');
+    }
+
+    /**
+     * Diagnóstico: retorna modo de ligação, agente Retell e versão atual.
+     * GET /api/configuracoes/diagnostico
+     */
+    public function diagnostico()
+    {
+        if (!app()->bound('empresa_id')) {
+            return ApiResponseService::forbidden('Empresa não identificada');
+        }
+
+        $empresaId = app('empresa_id');
+        $empresa = Empresa::withoutGlobalScopes()->find($empresaId);
+
+        if (!$empresa) {
+            return ApiResponseService::notFound('Empresa não encontrada');
+        }
+
+        $configuracao = EmpresaConfiguracao::where('empresa_id', $empresaId)->first();
+        $integracao = EmpresaIntegracao::where('empresa_id', $empresaId)->first();
+
+        // Determinar modo exatamente como o worker faz
+        $modoLigacao = $configuracao->modo_ligacao ?? (env('USE_IVR_MODE', true) ? 'ivr' : 'retell');
+        $modoOrigem = $configuracao && $configuracao->modo_ligacao
+            ? 'empresa_configuracoes (banco)'
+            : 'env USE_IVR_MODE (fallback)';
+
+        // Resolver credenciais exatamente como o worker faz
+        $creds = IntegracaoService::getCredentials($empresaId);
+        $retellAgentId = $creds['retell_agent_id'];
+        $retellApiKey = $creds['retell_api_key'];
+        $fromNumber = $creds['from_number'];
+
+        $agentIdOrigem = ($integracao && !empty($integracao->retell_agent_id))
+            ? 'empresa_integracoes (banco)'
+            : 'env RETELL_AGENT_ID (fallback)';
+
+        $apiKeyOrigem = ($integracao && !empty($integracao->retell_api_key))
+            ? 'empresa_integracoes (banco)'
+            : 'env RETELL_API_KEY (fallback)';
+
+        // Buscar info do agente na Retell API (se modo retell)
+        $retellAgentInfo = null;
+        $retellError = null;
+
+        if ($modoLigacao === 'retell' && !empty($retellApiKey) && !empty($retellAgentId)) {
+            try {
+                $client = new Client();
+                $response = $client->get("https://api.retellai.com/get-agent/{$retellAgentId}", [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $retellApiKey,
+                        'Content-Type'  => 'application/json',
+                    ],
+                    'timeout' => 10,
+                ]);
+
+                $agentData = json_decode($response->getBody()->getContents(), true);
+                $retellAgentInfo = [
+                    'agent_id'       => $agentData['agent_id'] ?? null,
+                    'agent_name'     => $agentData['agent_name'] ?? null,
+                    'version'        => $agentData['version'] ?? null,
+                    'llm_id'         => $agentData['response_engine']['llm_id'] ?? ($agentData['llm_websocket_url'] ?? null),
+                    'voice_id'       => $agentData['voice_id'] ?? null,
+                    'language'       => $agentData['language'] ?? null,
+                    'last_modified'  => $agentData['last_modification_timestamp'] ?? null,
+                ];
+            } catch (\Exception $e) {
+                $retellError = $e->getMessage();
+                Log::warning("[DIAGNOSTICO] Erro ao consultar Retell API: {$retellError}");
+            }
+        }
+
+        // Credenciais Twilio (se modo IVR)
+        $twilioInfo = null;
+        if ($modoLigacao === 'ivr') {
+            $twilioCreds = IntegracaoService::getTwilioCredentials($empresaId);
+            $twilioInfo = [
+                'from_number' => $twilioCreds['twilio_from_number'] ?? null,
+                'voice'       => $twilioCreds['twilio_voice'] ?? null,
+                'speech_rate' => $twilioCreds['twilio_speech_rate'] ?? null,
+                'has_sid'     => !empty($twilioCreds['twilio_account_sid']),
+                'has_token'   => !empty($twilioCreds['twilio_auth_token']),
+            ];
+        }
+
+        $resultado = [
+            'empresa' => [
+                'id'   => $empresa->id,
+                'nome' => $empresa->nome,
+            ],
+            'modo_ligacao' => [
+                'valor'  => $modoLigacao,
+                'origem' => $modoOrigem,
+            ],
+            'retell' => [
+                'agent_id'        => $retellAgentId,
+                'agent_id_origem' => $agentIdOrigem,
+                'api_key_origem'  => $apiKeyOrigem,
+                'has_api_key'     => !empty($retellApiKey),
+                'from_number'     => $fromNumber,
+                'agent_info'      => $retellAgentInfo,
+                'erro'            => $retellError,
+            ],
+            'twilio' => $twilioInfo,
+            'config_existe' => [
+                'empresa_configuracoes' => $configuracao !== null,
+                'empresa_integracoes'   => $integracao !== null,
+            ],
+            'env_fallbacks' => [
+                'USE_IVR_MODE'    => env('USE_IVR_MODE', 'não definido'),
+                'RETELL_AGENT_ID' => !empty(env('RETELL_AGENT_ID')) ? env('RETELL_AGENT_ID') : 'não definido',
+                'has_RETELL_API_KEY' => !empty(env('RETELL_API_KEY')),
+            ],
+        ];
+
+        Log::info("[DIAGNOSTICO] Empresa {$empresaId}: " . json_encode($resultado));
+
+        return ApiResponseService::success($resultado);
     }
 }

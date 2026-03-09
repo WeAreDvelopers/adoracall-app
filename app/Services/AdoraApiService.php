@@ -14,9 +14,10 @@ class AdoraApiService
     {
         $this->baseUrl = rtrim($baseUrl ?? env('ADORA_API_URL', 'http://localhost:8000'), '/');
         $this->client = new Client([
-            'base_uri' => $this->baseUrl,
-            'timeout'  => 30,
-            'headers'  => [
+            'base_uri'        => $this->baseUrl,
+            'timeout'         => 10,
+            'connect_timeout' => 3,
+            'headers'         => [
                 'Accept'       => 'application/json',
                 'Content-Type' => 'application/json',
             ],
@@ -150,13 +151,13 @@ class AdoraApiService
      *
      * @return array Detalhes completos da proposta
      */
-    public function consultarEAguardar(string $cpf, int $maxRetries = 10, int $sleepMs = 500): array
+    public function consultarEAguardar(string $cpf, int $maxRetries = 6, int $sleepMs = 300): array
     {
         // Passo 1: Solicitar
         $request = $this->requestProposals($cpf);
         $proposalId = $request['id'];
 
-        // Passo 2: Poll até completed
+        // Passo 2: Poll até completed (backoff progressivo: 300, 400, 500, 600, 700, 800ms)
         for ($i = 0; $i < $maxRetries; $i++) {
             $status = $this->getProposalStatus($proposalId);
 
@@ -164,7 +165,7 @@ class AdoraApiService
                 break;
             }
 
-            usleep($sleepMs * 1000);
+            usleep(($sleepMs + ($i * 100)) * 1000);
         }
 
         // Passo 3: Obter detalhes

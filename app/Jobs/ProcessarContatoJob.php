@@ -152,16 +152,12 @@ class ProcessarContatoJob extends Job
             Log::info('🤖 [RETELL-CONFIG] Agent ID: ' . (empty($agentId) ? 'VAZIO!' : $agentId));
             Log::info('📞 [RETELL-CONFIG] From Number: ' . (empty($fromNumber) ? 'VAZIO!' : $fromNumber));
 
-            // Busca a versão do agente dinamicamente
-            $agentVersion = $this->fetchAgentVersion($apiKey, $agentId);
-            Log::info("🔄 [RETELL-AGENT-VERSION] Versão do agente obtida: {$agentVersion}");
-
             // Construir request no novo formato da API
+            // Não envia override_agent_version para sempre usar a versão mais recente publicada
             $requestBody = [
                 'from_number'                  => $fromNumber,
                 'to_number'                    => $contato->telefone,
                 'override_agent_id'            => $agentId,
-                'override_agent_version'       => $agentVersion,
                 'retell_llm_dynamic_variables' => $dynamicVariables,
                 'metadata'                     => [
                     'contato_id'    => $contato->id,
@@ -330,36 +326,6 @@ class ProcessarContatoJob extends Job
             $queueJob->status        = 'failed';
             $queueJob->erro_mensagem = 'Falha crítica: ' . $exception->getMessage();
             $queueJob->save();
-        }
-    }
-
-    /**
-     * Busca a versão atual do agente na Retell API.
-     *
-     * @param  string  $apiKey
-     * @param  string  $agentId
-     * @return int
-     */
-    protected function fetchAgentVersion($apiKey, $agentId)
-    {
-        try {
-            $client   = new Client();
-            $response = $client->get("https://api.retellai.com/v2/get-agent/{$agentId}", [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type'  => 'application/json',
-                ],
-            ]);
-
-            $agentData = json_decode($response->getBody()->getContents(), true);
-            $version   = $agentData['version'] ?? 0;
-
-            Log::info("✅ [AGENT-VERSION-FETCHED] Versão obtida da API Retell: {$version}");
-            return $version;
-
-        } catch (\Exception $e) {
-            Log::warning("⚠️  [AGENT-VERSION-FALLBACK] Erro ao buscar versão do agente: " . $e->getMessage() . " | Usando fallback: 2");
-            return 2; // Fallback para versão 2
         }
     }
 

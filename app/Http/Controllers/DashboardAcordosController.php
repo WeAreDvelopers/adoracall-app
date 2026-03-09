@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Acordo;
 use App\Models\Contato;
 use App\Models\Ligacao;
+use App\Models\Mailing;
 use App\Models\PropostaPagamento;
+use App\Models\QueueJob;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -334,6 +336,75 @@ class DashboardAcordosController extends Controller
             return response()->json([
                 'success' => false,
                 'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /api/dashboard/home-stats
+     * KPIs resumidos para a home page (Big Numbers)
+     */
+    public function getHomeStats()
+    {
+        try {
+            $startDate = Carbon::now()->subDays(30);
+
+            // Campanhas ativas
+            $campanhasAtivas = Mailing::where('status', 'ativo')->count();
+
+            // Chamadas hoje
+            $chamadasHoje = Ligacao::whereDate('created_at', Carbon::today())->count();
+
+            // Acordos nos últimos 30 dias
+            $acordosPeriodo = Acordo::where('created_at', '>=', $startDate)->count();
+
+            // Taxa de conversão (acordos / ligações atendidas)
+            $ligacoesAtendidas = Ligacao::where('foi_atendida', true)
+                ->where('created_at', '>=', $startDate)
+                ->count();
+
+            $acordosFirmados = Ligacao::where('foi_atendida', true)
+                ->where('created_at', '>=', $startDate)
+                ->whereNotNull('acordo_id')
+                ->count();
+
+            $taxaConversao = $ligacoesAtendidas > 0
+                ? round(($acordosFirmados / $ligacoesAtendidas) * 100, 1)
+                : 0;
+
+            // Valor total acordado (últimos 30 dias)
+            $valorAcordado = 0;
+            try {
+                $valorAcordado = Acordo::where('acordos.created_at', '>=', $startDate)
+                    ->join('propostas_pagamento', 'acordos.proposta_id', '=', 'propostas_pagamento.id')
+                    ->sum('propostas_pagamento.valor_proposta_numerico') ?? 0;
+            } catch (\Exception $e) {
+                Log::debug('Erro ao calcular valor acordado', ['erro' => $e->getMessage()]);
+            }
+
+            // Contatos na fila (pendentes)
+            $contatosFila = QueueJob::where('status', 'pending')->count();
+
+            return response()->json([
+                'success' => true,
+                'stats' => [
+                    'campanhas_ativas' => $campanhasAtivas,
+                    'chamadas_hoje' => $chamadasHoje,
+                    'acordos_periodo' => $acordosPeriodo,
+                    'taxa_conversao' => $taxaConversao,
+                    'valor_acordado' => round($valorAcordado, 2),
+                    'contatos_fila' => $contatosFila,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Erro ao obter home stats', [
+                'erro' => $e->getMessage(),
+                'stack' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

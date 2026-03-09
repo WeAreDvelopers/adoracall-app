@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Models\EmpresaConfiguracao;
 use App\Models\QueueJob;
 use App\Models\Mailing;
 use App\Jobs\ProcessarContatoJob;
@@ -87,12 +88,16 @@ class ProcessarFilaLigacoes extends Command
                 $job->status = 'processing';
                 $job->save();
 
-                // Executar o handle do job (IVR ou Retell)
-                $useIvr = env('USE_IVR_MODE', true);
-                $jobProcessor = $useIvr
-                    ? new ProcessarContatoIvrJob($job->id)
-                    : new ProcessarContatoJob($job->id);
+                // Determinar modo de ligação por empresa (fallback: env global)
+                $config = EmpresaConfiguracao::where('empresa_id', $job->empresa_id)->first();
+                $modo = $config->modo_ligacao ?? (env('USE_IVR_MODE', true) ? 'ivr' : 'retell');
+
+                $jobProcessor = ($modo === 'retell')
+                    ? new ProcessarContatoJob($job->id)
+                    : new ProcessarContatoIvrJob($job->id);
                 $jobProcessor->handle();
+
+                Log::info("[JOB-MODE] Job {$job->id} | Empresa {$job->empresa_id} | Modo: {$modo}");
 
                 Log::debug("✅ [WORKER-JOB-PROCESSED] Job {$job->id} processado com sucesso (Contato: {$job->contato->nome})");
             } catch (\Exception $e) {

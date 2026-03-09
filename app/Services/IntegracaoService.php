@@ -98,7 +98,7 @@ class IntegracaoService
             'twilio_account_sid' => self::decryptField($integracao, 'twilio_account_sid', env('TWILIO_ACCOUNT_SID')),
             'twilio_auth_token'  => self::decryptField($integracao, 'twilio_auth_token', env('TWILIO_AUTH_TOKEN')),
             'twilio_from_number' => self::normalizePhone($integracao->twilio_from_number ?? env('TWILIO_FROM_NUMBER')),
-            'twilio_voice'       => $integracao->twilio_voice ?? env('TWILIO_VOICE', 'Polly.Camila'),
+            'twilio_voice'       => $integracao->twilio_voice ?? env('TWILIO_VOICE', 'Google.pt-BR-Neural2-A'),
             'twilio_speech_rate' => $integracao->twilio_speech_rate ?? env('TWILIO_SPEECH_RATE'),
         ];
     }

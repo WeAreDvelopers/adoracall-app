@@ -7,9 +7,11 @@ use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Client;
 use App\Models\Contato;
 use App\Models\Empresa;
+use App\Models\EmpresaConfiguracao;
 use App\Models\Ligacao;
 use App\Services\IntegracaoService;
 use App\Services\SecurityService;
+use App\Services\TwilioUraService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -66,7 +68,21 @@ class CallController extends Controller
             ], 400);
         }
 
-        $creds   = IntegracaoService::getCredentials(app()->bound('empresa_id') ? app('empresa_id') : null);
+        // Verificar modo de ligação da empresa
+        $empresaId = app()->bound('empresa_id') ? app('empresa_id') : null;
+        $config = $empresaId ? EmpresaConfiguracao::getForEmpresa($empresaId) : null;
+        $modo = $config?->modo_ligacao ?? 'ivr';
+
+        Log::info("[CALL-MODE] empresa_id={$empresaId} | modo_ligacao={$modo} | config_exists=" . ($config ? 'sim' : 'nao'));
+
+        if ($modo === 'ivr') {
+            return $this->startIvrCall($request, $validated, $empresaId);
+        }
+
+        Log::info("[CALL-RETELL] Iniciando chamada via Retell para empresa {$empresaId}");
+
+        // Modo Retell
+        $creds   = IntegracaoService::getCredentials($empresaId);
         $apiKey  = $creds['retell_api_key'];
         $agentId = $creds['retell_agent_id'];
         $from    = $creds['from_number'];
@@ -128,42 +144,40 @@ class CallController extends Controller
             // Criar chamada via Retell API
             $retellUrl = 'https://api.retellai.com/v2/create-phone-call';
 
-            // Preparar variáveis dinâmicas para o agente
+            // Preparar variáveis dinâmicas (nomes devem coincidir com o agente Retell)
+            $configuracao = EmpresaConfiguracao::getForEmpresa($empresaId);
+            $desconto = ($validated['percentual_desconto'] ?? $configuracao->percentual_desconto_alto ?? 10) / 100;
+            $valorComDesconto = $validated['valor_devido'] * (1 - $desconto);
+            $numParcelas = (int)($validated['max_parcelas'] ?? $configuracao->max_parcelas ?? 3);
+
             $dynamicVariables = [
-                'primeiro_nome' => $validated['primeiro_nome'],
-                'sobrenome' => $validated['sobrenome'] ?? '',
-                'empresa_credora' => $empresaCredora ?? 'Empresa',
-                'valor_devido' => number_format($validated['valor_devido'], 2, ',', '.'),
-                'data_vencimento' => $validated['data_vencimento'],
-                'nome_atendente' => $nomeAtendente,
-                'numero_empresa' => $numeroEmpresa,
-                'percentual_desconto' => $validated['percentual_desconto'] ?? '10',
-                'valor_com_desconto' => $validated['valor_com_desconto'] ?? '',
-                'max_parcelas' => (string)($validated['max_parcelas'] ?? 3),
-                'valor_parcela' => $validated['valor_parcela'] ?? '',
-                'max_parcelas_estendidas' => (string)($validated['max_parcelas_estendidas'] ?? 6),
-                'canal_envio' => '',
-                'num_parcelas' => '',
-                'condições_acordo_especial' => '',
-                'data_retorno' => '',
-                'hora_retorno' => '',
+                'nome_cliente'            => $validated['primeiro_nome'],
+                'sobrenome'               => $validated['sobrenome'] ?? '',
+                'credora'                 => $empresaCredora ?? 'Empresa',
+                'valor_devido'            => number_format($validated['valor_devido'], 2, ',', '.'),
+                'data_vencimento'         => $validated['data_vencimento'],
+                'percentual_desconto'     => round($desconto * 100) . '%',
+                'valor_com_desconto'      => $validated['valor_com_desconto'] ?: number_format($valorComDesconto, 2, ',', '.'),
+                'max_parcelas'            => (string) $numParcelas,
+                'valor_parcela'           => $validated['valor_parcela'] ?: number_format($valorComDesconto / max($numParcelas, 1), 2, ',', '.'),
+                'campanha'                => $validated['campanha'] ?? 'Cobrança ' . date('m/Y'),
+                'historico_inadimplencia' => 'primeira_vez',
+                'tentativas_contato'      => (string) ($contato->tentativas_contato ?? 1),
             ];
 
             $requestBody = [
-                'from_number' => $from,
-                'to_number'   => $validated['to'],
-                'override_agent_id' => $agentId,
-                'dynamic_variables' => $dynamicVariables,
-            ];
-
-            // Adicionar metadados para rastreamento (incluindo contato_id e empresa_id)
-            $requestBody['metadata'] = [
-                'contato_id' => $contato->id,
-                'customer_name' => $contato->nome_completo,
-                'company' => $validated['empresa_credora'],
-                'debt_amount' => $validated['valor_devido'],
-                'tipo_chamada' => 'cobranca',
-                'empresa_id' => $contato->empresa_id,
+                'from_number'                  => $from,
+                'to_number'                    => $validated['to'],
+                'override_agent_id'            => $agentId,
+                'retell_llm_dynamic_variables' => $dynamicVariables,
+                'metadata'                     => [
+                    'contato_id'    => $contato->id,
+                    'customer_name' => $contato->nome_completo,
+                    'company'       => $empresaCredora,
+                    'debt_amount'   => $validated['valor_devido'],
+                    'tipo_chamada'  => 'cobranca',
+                    'empresa_id'    => $contato->empresa_id,
+                ],
             ];
 
             Log::info('📤 Request body: ' . json_encode($requestBody));
@@ -225,6 +239,77 @@ class CallController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => ['message' => $e->getMessage()],
+            ], 500);
+        }
+    }
+
+    /**
+     * Inicia chamada via IVR (Twilio TwiML).
+     */
+    private function startIvrCall(Request $request, array $validated, ?int $empresaId)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Buscar nome da credora
+            $empresaCredora = $validated['empresa_credora'] ?? null;
+            if (!$empresaCredora && $empresaId) {
+                $empresa = Empresa::withoutGlobalScopes()->find($empresaId);
+                if ($empresa) {
+                    $empresaCredora = $empresa->nome_credora;
+                }
+            }
+
+            // Criptografar CPF
+            $cpfCriptografado = $this->securityService->encryptCpf($validated['cpf']);
+            $primeirosDigitosCpf = $this->securityService->getPrimeirosDigitosCpf($validated['cpf']);
+
+            // Criar/atualizar contato
+            $contato = Contato::updateOrCreate(
+                [
+                    'telefone'   => $validated['to'],
+                    'empresa_id' => $empresaId,
+                ],
+                [
+                    'nome'                => $validated['primeiro_nome'],
+                    'sobrenome'           => $validated['sobrenome'] ?? null,
+                    'cpf'                 => $cpfCriptografado,
+                    'cpf_primeiros_digitos' => $primeirosDigitosCpf,
+                    'data_nascimento'     => $validated['data_nascimento'],
+                    'valor_debito'        => $validated['valor_devido'],
+                    'vencimento'          => $validated['data_vencimento'],
+                    'empresa_credora'     => $empresaCredora,
+                    'campanha'            => $validated['campanha'] ?? 'Cobrança ' . date('m/Y'),
+                    'status'              => 'em_ligacao',
+                ]
+            );
+
+            $contato->incrementarTentativas();
+
+            Log::info("[IVR-MANUAL] Iniciando chamada IVR para contato {$contato->id}");
+
+            // Iniciar chamada via TwilioUraService
+            $uraService = app(TwilioUraService::class);
+            $result = $uraService->initiateCall($contato, $empresaId, null, null);
+
+            DB::commit();
+
+            return response()->json([
+                'success'     => true,
+                'call_id'     => $result['call_sid'] ?? null,
+                'call_status' => 'iniciada',
+                'contato_id'  => $contato->id,
+                'ligacao_id'  => $result['ligacao_id'] ?? null,
+                'message'     => 'Ligação iniciada com sucesso via IVR.',
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("[IVR-MANUAL] Erro: {$e->getMessage()}");
+
+            return response()->json([
+                'success' => false,
+                'error'   => ['message' => $e->getMessage()],
             ], 500);
         }
     }

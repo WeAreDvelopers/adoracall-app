@@ -414,6 +414,163 @@
             box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
         }
 
+        .btn-action-contacts {
+            background: #546e7a;
+            color: white;
+        }
+
+        .btn-action-contacts:hover:not(:disabled) {
+            background: #455a64;
+            box-shadow: 0 2px 8px rgba(84, 110, 122, 0.3);
+        }
+
+        /* Modal Contatos */
+        .modal-contatos .modal-content {
+            max-width: 800px;
+            width: 90%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-contatos-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .modal-contatos-header h2 {
+            margin: 0;
+            color: var(--notion-text);
+        }
+
+        .modal-contatos-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--notion-text-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .modal-contatos-close:hover {
+            background: var(--notion-bg-secondary);
+        }
+
+        .modal-contatos-filters {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .modal-contatos-filters input,
+        .modal-contatos-filters select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--notion-border);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            background: var(--notion-bg);
+            color: var(--notion-text);
+        }
+
+        .modal-contatos-filters input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .modal-contatos-body {
+            overflow-y: auto;
+            flex: 1;
+            min-height: 200px;
+        }
+
+        .contatos-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .contatos-table th {
+            background: var(--notion-bg-secondary);
+            padding: 0.6rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--notion-text-secondary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .contatos-table td {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid var(--notion-border);
+            color: var(--notion-text);
+        }
+
+        .contatos-table tr:hover td {
+            background: var(--notion-bg-secondary);
+        }
+
+        .contato-status {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .contato-status-pendente { background: #e3f2fd; color: #1565c0; }
+        .contato-status-em_ligacao { background: #fff3e0; color: #e65100; }
+        .contato-status-finalizado { background: #e8f5e9; color: #2e7d32; }
+        .contato-status-acordo_firmado { background: #e8f5e9; color: #1b5e20; }
+        .contato-status-falha { background: #ffebee; color: #c62828; }
+        .contato-status-sem_resposta { background: #fce4ec; color: #ad1457; }
+
+        .contatos-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0 0;
+            font-size: 0.85rem;
+            color: var(--notion-text-secondary);
+        }
+
+        .contatos-pagination-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .contatos-pagination-buttons button {
+            padding: 0.4rem 0.75rem;
+            border: 1px solid var(--notion-border);
+            border-radius: 4px;
+            background: var(--notion-bg);
+            color: var(--notion-text);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .contatos-pagination-buttons button:hover:not(:disabled) {
+            background: var(--notion-bg-secondary);
+        }
+
+        .contatos-pagination-buttons button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .contatos-loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--notion-text-secondary);
+        }
+
         .empty-state {
             text-align: center;
             padding: 3rem 1rem;
@@ -693,6 +850,37 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Contatos -->
+    <div class="modal modal-contatos" id="contatosModal">
+        <div class="modal-content">
+            <div class="modal-contatos-header">
+                <h2 id="contatosModalTitle">Contatos</h2>
+                <button class="modal-contatos-close" onclick="closeContatosModal()">&times;</button>
+            </div>
+            <div class="modal-contatos-filters">
+                <input type="text" id="contatosBusca" placeholder="Buscar por nome, telefone ou CPF..." onkeydown="if(event.key==='Enter') loadContatos()">
+                <select id="contatosStatusFilter" onchange="loadContatos()">
+                    <option value="">Todos os status</option>
+                    <option value="pendente">Pendente</option>
+                    <option value="em_ligacao">Em ligação</option>
+                    <option value="finalizado">Finalizado</option>
+                    <option value="acordo_firmado">Acordo firmado</option>
+                    <option value="sem_resposta">Sem resposta</option>
+                </select>
+            </div>
+            <div class="modal-contatos-body" id="contatosBody">
+                <div class="contatos-loading">Carregando contatos...</div>
+            </div>
+            <div class="contatos-pagination" id="contatosPagination" style="display:none;">
+                <span id="contatosInfo"></span>
+                <div class="contatos-pagination-buttons">
+                    <button id="contatosPrev" onclick="loadContatos(contatosCurrentPage - 1)">Anterior</button>
+                    <button id="contatosNext" onclick="loadContatos(contatosCurrentPage + 1)">Próxima</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -838,6 +1026,10 @@
                 buttons +=
                     `<button class="btn-action btn-action-stop" id="btn-parar-${mailingId}" onclick="showStopConfirm(${mailingId}, '${queue.nome}')"><i class="fas fa-stop"></i> Parar</button>`;
             }
+
+            // Botão Ver Contatos
+            buttons +=
+                `<button class="btn-action btn-action-contacts" onclick="openContatosModal(${mailingId}, '${queue.nome}')"><i class="fas fa-users"></i> Contatos</button>`;
 
             return buttons;
         }
@@ -1180,5 +1372,106 @@
             </tr>
         `;
         }
+
+        // ===== Modal de Contatos =====
+        let contatosMailingId = null;
+        let contatosCurrentPage = 1;
+
+        function openContatosModal(mailingId, mailingName) {
+            contatosMailingId = mailingId;
+            contatosCurrentPage = 1;
+            document.getElementById('contatosModalTitle').textContent = `Contatos - ${mailingName}`;
+            document.getElementById('contatosBusca').value = '';
+            document.getElementById('contatosStatusFilter').value = '';
+            document.getElementById('contatosModal').classList.add('active');
+            loadContatos();
+        }
+
+        function closeContatosModal() {
+            document.getElementById('contatosModal').classList.remove('active');
+            contatosMailingId = null;
+        }
+
+        async function loadContatos(page = 1) {
+            if (!contatosMailingId) return;
+            contatosCurrentPage = page;
+
+            const body = document.getElementById('contatosBody');
+            body.innerHTML = '<div class="contatos-loading"><i class="fas fa-spinner fa-spin"></i> Carregando contatos...</div>';
+            document.getElementById('contatosPagination').style.display = 'none';
+
+            const busca = document.getElementById('contatosBusca').value;
+            const status = document.getElementById('contatosStatusFilter').value;
+
+            let url = `${API_BASE_URL}/filas_campanha/${contatosMailingId}/contatos?page=${page}&per_page=15`;
+            if (busca) url += `&buscar=${encodeURIComponent(busca)}`;
+            if (status) url += `&status=${encodeURIComponent(status)}`;
+
+            try {
+                const response = await fetchWithAuth(url);
+                if (!response.ok) throw new Error('Erro ao buscar contatos');
+
+                const data = await response.json();
+                renderContatos(data);
+            } catch (error) {
+                console.error('[CONTATOS] Erro:', error);
+                body.innerHTML = `<div class="contatos-loading" style="color: #f44336;">Erro ao carregar contatos: ${error.message}</div>`;
+            }
+        }
+
+        function renderContatos(data) {
+            const body = document.getElementById('contatosBody');
+            const contatos = data.data || [];
+
+            if (contatos.length === 0) {
+                body.innerHTML = '<div class="contatos-loading">Nenhum contato encontrado</div>';
+                document.getElementById('contatosPagination').style.display = 'none';
+                return;
+            }
+
+            let html = `<table class="contatos-table">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>Valor Débito</th>
+                        <th>Status</th>
+                        <th>Tentativas</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            contatos.forEach(c => {
+                const statusClass = (c.status || '').replace(/\s+/g, '_');
+                const valor = c.valor_debito ? parseFloat(c.valor_debito).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-';
+                html += `
+                    <tr>
+                        <td>${c.nome || '-'} ${c.sobrenome || ''}</td>
+                        <td>${c.telefone || '-'}</td>
+                        <td>${valor}</td>
+                        <td><span class="contato-status contato-status-${statusClass}">${c.status || '-'}</span></td>
+                        <td>${c.tentativas || 0}</td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table>';
+            body.innerHTML = html;
+
+            // Paginação
+            const pagination = document.getElementById('contatosPagination');
+            const from = data.from || 0;
+            const to = data.to || 0;
+            const total = data.total || 0;
+
+            document.getElementById('contatosInfo').textContent = `${from}-${to} de ${total} contatos`;
+            document.getElementById('contatosPrev').disabled = !data.prev_page_url;
+            document.getElementById('contatosNext').disabled = !data.next_page_url;
+            pagination.style.display = total > 0 ? 'flex' : 'none';
+        }
+
+        // Fechar modal de contatos clicando fora
+        document.getElementById('contatosModal').addEventListener('click', function(e) {
+            if (e.target === this) closeContatosModal();
+        });
     </script>
 @endpush

@@ -104,18 +104,19 @@ $router->group(['prefix' => 'api'], function () use ($router) {
 
         // ========== IVR PROGRAMÁTICA (Twilio TwiML) ==========
         // Webhooks públicos - Twilio chama de fora, sem autenticação
+        // Fluxo: welcome → confirm-identity → verify-cpf → debt-info → fetch-debt → cash-response → extension-response → installment-response
         $router->group(['prefix' => 'ivr'], function () use ($router) {
             $router->post('/welcome', 'UraIvrController@welcome');
             $router->post('/confirm-identity', 'UraIvrController@confirmIdentity');
             $router->post('/confirm-identity-retry', 'UraIvrController@confirmIdentityRetry');
             $router->post('/verify-cpf', 'UraIvrController@verifyCpf');
             $router->post('/debt-info', 'UraIvrController@debtInfo');
-            $router->post('/ask-proposals', 'UraIvrController@askProposals');
-            $router->post('/proposal-response', 'UraIvrController@proposalResponse');
             $router->post('/fetch-debt', 'UraIvrController@fetchDebt');
-            $router->post('/repeat-options', 'UraIvrController@repeatOptions');
-            $router->post('/select', 'UraIvrController@select');
-            $router->post('/confirm', 'UraIvrController@confirm');
+            $router->post('/cash-response', 'UraIvrController@cashResponse');
+            $router->post('/extension-response', 'UraIvrController@extensionResponse');
+            $router->post('/offer-installments', 'UraIvrController@offerInstallments');
+            $router->post('/installment-response', 'UraIvrController@installmentResponse');
+            $router->post('/process-deal', 'UraIvrController@processDeal');
             $router->post('/status', 'UraIvrController@status');
         });
 
@@ -215,6 +216,9 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->group(['prefix' => 'dashboard', 'middleware' => 'auth.jwt'], function () use ($router) {
         // Teste simples
         $router->get('/test', 'DashboardAcordosController@testSimple');
+
+        // KPIs da home page (Big Numbers)
+        $router->get('/home-stats', 'DashboardAcordosController@getHomeStats');
 
         // Estatísticas resumidas para o dashboard
         $router->get('/stats', 'DashboardAcordosController@getStats');
@@ -360,6 +364,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->group(['prefix' => 'configuracoes', 'middleware' => 'auth.jwt'], function () use ($router) {
         $router->get('/', 'ConfiguracaoController@getConfiguracoes');
         $router->put('/', 'ConfiguracaoController@updateConfiguracoes');
+        $router->get('/diagnostico', 'ConfiguracaoController@diagnostico');
     });
 
     // ========== ADMIN - SUPER ADMIN API ==========

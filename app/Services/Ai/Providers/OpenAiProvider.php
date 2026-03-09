@@ -12,11 +12,11 @@ class OpenAiProvider implements AiProviderInterface
     private string $model;
 
     private const API_URL = 'https://api.openai.com/v1/chat/completions';
-    private const TIMEOUT = 8;          // segundos - rápido para não travar ligação
-    private const MAX_TOKENS = 300;     // limita tamanho da resposta
+    private const TIMEOUT = 5;          // segundos - rápido para não travar ligação
+    private const MAX_TOKENS = 250;     // limita tamanho da resposta
     private const TEMPERATURE = 0.7;    // criatividade controlada
 
-    public function __construct(string $apiKey, string $model = 'gpt-4o')
+    public function __construct(string $apiKey, string $model = 'gpt-4o-mini')
     {
         $this->apiKey = $apiKey;
         $this->model = $model;

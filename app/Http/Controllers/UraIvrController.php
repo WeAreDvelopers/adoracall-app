@@ -9,7 +9,9 @@ use App\Models\QueueJob;
 use App\Models\UraCall;
 use App\Services\Ai\AiMessageService;
 use App\Services\IntegracaoService;
+use App\Services\NumberToWordsService;
 use App\Services\TwilioUraService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Twilio\TwiML\VoiceResponse;
@@ -18,9 +20,10 @@ class UraIvrController extends Controller
 {
     protected TwilioUraService $uraService;
     protected AiMessageService $aiService;
+    protected NumberToWordsService $numberToWords;
 
     /** Opções de voz resolvidas dinamicamente por empresa (cache por request). */
-    private array $voiceOpts = ['language' => 'pt-BR', 'voice' => 'Polly.Camila'];
+    private array $voiceOpts = ['language' => 'pt-BR', 'voice' => 'Google.pt-BR-Neural2-A'];
     private ?string $speechRate = null;
     private bool $voiceInitialized = false;
 
@@ -28,6 +31,7 @@ class UraIvrController extends Controller
     {
         $this->uraService = new TwilioUraService();
         $this->aiService = new AiMessageService();
+        $this->numberToWords = new NumberToWordsService();
     }
 
     /**
@@ -41,7 +45,7 @@ class UraIvrController extends Controller
         }
 
         $creds = IntegracaoService::getTwilioCredentials($empresaId);
-        $voice = $creds['twilio_voice'] ?? 'Polly.Camila';
+        $voice = $creds['twilio_voice'] ?? 'Google.pt-BR-Neural2-A';
 
         $this->voiceOpts = ['language' => 'pt-BR', 'voice' => $voice];
         $this->speechRate = $creds['twilio_speech_rate'] ?: null;
@@ -108,7 +112,7 @@ class UraIvrController extends Controller
     }
 
     // =========================================================================
-    //  STEP 2 — CONFIRM IDENTITY: Processa fala, se positivo → apresenta + CPF
+    //  STEP 2 — CONFIRM IDENTITY: Processa fala → apresenta + pede CPF (dtmf+speech)
     // =========================================================================
 
     public function confirmIdentity(Request $request)
@@ -150,40 +154,47 @@ class UraIvrController extends Controller
         $primeiroNome = $contato ? explode(' ', trim($contato->nome))[0] : 'cliente';
         $empresa = Empresa::withoutGlobalScopes()->with('configuracao')->find($uraCall->empresa_id);
         $nomeCredora = $empresa->nome_credora ?? $empresa->nome;
+        $nomeAtendente = $empresa->configuracao->nome_atendente ?? 'Angélica';
+        $artigoPrep = ($empresa->configuracao->artigo_empresa ?? 'a') === 'o' ? 'do' : 'da';
 
-        // Apresentação (fala antes do Gather — não captura DTMF durante isso)
-        $defaultIntro = "Olá, tudo bem? Me chamo Angélica, sou consultora da {$nomeCredora}. "
-            . "Estou entrando em contato para falar sobre uma negociação especial dos seus débitos.";
+        // Apresentação
+        $defaultIntro = "Certo! Me chamo {$nomeAtendente}, sou consultora digital {$artigoPrep} {$nomeCredora}. "
+            . "Por questão de segurança, preciso confirmar seus dados.";
 
         $introMsg = $this->aiService->generateMessage(
             $empresa,
             UraCall::STEP_START,
             [
-                'nome_cliente' => $primeiroNome,
-                'nome_credora' => $nomeCredora,
+                'nome_cliente'    => $primeiroNome,
+                'nome_credora'    => $nomeCredora,
+                'nome_atendente'  => $nomeAtendente,
             ],
             $defaultIntro
         );
 
         $response->say($this->txt($introMsg), $this->voiceOpts);
 
-        // Pedir CPF (Gather DTMF — captura os 3 dígitos)
+        // Pedir CPF (DTMF + Speech)
         $gather = $response->gather([
-            'numDigits' => 3,
-            'action'    => '/api/ura/ivr/verify-cpf',
-            'method'    => 'POST',
-            'timeout'   => 10,
+            'input'         => 'dtmf speech',
+            'numDigits'     => 3,
+            'language'      => 'pt-BR',
+            'speechTimeout' => 'auto',
+            'action'        => '/api/ura/ivr/verify-cpf',
+            'method'        => 'POST',
+            'timeout'       => 10,
+            'hints'         => 'zero, um, dois, três, quatro, cinco, seis, sete, oito, nove, meia',
         ]);
 
         $gather->say(
-            $this->txt('Para eu conseguir verificar sua situação, preciso que você me confirme o seu C P F. '
-            . 'Por favor, me informe os três primeiros dígitos do seu documento.'),
+            $this->txt('Me confirma os três primeiros números do seu C P F? '
+            . 'Você pode digitar ou falar os números.'),
             $this->voiceOpts
         );
 
         // Timeout — repetir pedido de CPF
         $response->say(
-            $this->txt('Não recebi os dígitos. Por favor, digite os três primeiros números do seu C P F.'),
+            $this->txt('Não recebi os números.'),
             $this->voiceOpts
         );
         $response->redirect('/api/ura/ivr/confirm-identity-retry', ['method' => 'POST']);
@@ -212,33 +223,48 @@ class UraIvrController extends Controller
         $this->initVoice($uraCall->empresa_id);
 
         $gather = $response->gather([
-            'numDigits' => 3,
-            'action'    => '/api/ura/ivr/verify-cpf',
-            'method'    => 'POST',
-            'timeout'   => 10,
+            'input'         => 'dtmf speech',
+            'numDigits'     => 3,
+            'language'      => 'pt-BR',
+            'speechTimeout' => 'auto',
+            'action'        => '/api/ura/ivr/verify-cpf',
+            'method'        => 'POST',
+            'timeout'       => 10,
+            'hints'         => 'zero, um, dois, três, quatro, cinco, seis, sete, oito, nove, meia',
         ]);
 
         $gather->say(
-            $this->txt('Por favor, digite os três primeiros números do seu C P F.'),
+            $this->txt('A confirmação serve para proteger suas informações. '
+            . 'Por favor, informe os três primeiros números do seu C P F. Você pode digitar ou falar.'),
             $this->voiceOpts
         );
 
         // Segundo timeout — encerrar
-        $response->say($this->txt('Não recebi os dígitos. Vou encerrar a ligação. Até logo.'), $this->voiceOpts);
+        $response->say($this->txt('Não recebi os números. Vou encerrar a ligação. Até logo.'), $this->voiceOpts);
         $response->hangup();
 
         return $this->twimlResponse($response);
     }
 
     // =========================================================================
-    //  STEP 3 — VERIFY CPF: Valida 3 primeiros dígitos (até 3 tentativas)
+    //  STEP 3 — VERIFY CPF: Valida 3 primeiros dígitos (DTMF ou Speech, até 3 tentativas)
     // =========================================================================
 
     public function verifyCpf(Request $request)
     {
-        $callSid = $request->input('CallSid');
-        $digits  = $request->input('Digits');
-        Log::info("[IVR-VERIFY-CPF] CallSid: {$callSid} | Digits: {$digits}");
+        $callSid      = $request->input('CallSid');
+        $digits       = $request->input('Digits');
+        $speechResult = $request->input('SpeechResult');
+        Log::info("[IVR-VERIFY-CPF] CallSid: {$callSid} | Digits: {$digits} | Speech: '{$speechResult}'");
+
+        // Se veio por speech, extrair dígitos da fala
+        if (empty($digits) && !empty($speechResult)) {
+            $digits = $this->extractDigitsFromSpeech($speechResult);
+            Log::info("[IVR-VERIFY-CPF] Dígitos extraídos da fala: {$digits}");
+        }
+
+        // Garantir que digits é string (nunca null na comparação)
+        $digits = $digits ? (string) $digits : '';
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -264,6 +290,9 @@ class UraIvrController extends Controller
         if (empty($esperado) && !empty($contato->cpf)) {
             $esperado = substr(preg_replace('/\D/', '', $contato->cpf), 0, 3);
         }
+        $esperado = (string) ($esperado ?? '');
+
+        Log::info("[IVR-VERIFY-CPF] Comparando | digits='{$digits}' esperado='{$esperado}'");
 
         // Controle de tentativas
         $dadosSalvos = $uraCall->selected_option ?? [];
@@ -271,8 +300,8 @@ class UraIvrController extends Controller
         $dadosSalvos['cpf_tentativas'] = $tentativas;
         $uraCall->selected_option = $dadosSalvos;
 
-        // Comparar dígitos
-        if ($digits === $esperado) {
+        // Comparar dígitos (ambos já são strings)
+        if ($digits !== '' && $digits === $esperado) {
             $uraCall->step = UraCall::STEP_IDENTIDADE_CONFIRMADA;
             $uraCall->save();
 
@@ -282,7 +311,7 @@ class UraIvrController extends Controller
             return $this->twimlResponse($response);
         }
 
-        // Dígitos incorretos
+        // Dígitos incorretos ou não extraídos
         Log::warning("[IVR-VERIFY-CPF] CPF incorreto | UraCall #{$uraCall->id} | Tentativa {$tentativas}/3 | Recebido={$digits} Esperado={$esperado}");
 
         if ($tentativas >= 3) {
@@ -290,10 +319,16 @@ class UraIvrController extends Controller
             $uraCall->result = 'cpf_nao_confirmado';
             $uraCall->save();
 
-            $response->say(
-                $this->txt('Não foi possível confirmar sua identidade. Agradecemos sua atenção. Até logo.'),
-                $this->voiceOpts
-            );
+            $empresa = Empresa::withoutGlobalScopes()->with('configuracao')->find($uraCall->empresa_id);
+            $telefoneContato = $empresa->configuracao->telefone_contato ?? null;
+
+            $msgFinal = 'Infelizmente não consegui validar seu C P F e não posso passar mais informações.';
+            if ($telefoneContato) {
+                $msgFinal .= " Peço que retorne em nosso número: {$telefoneContato}, repetindo, {$telefoneContato}.";
+            }
+            $msgFinal .= ' Até logo.';
+
+            $response->say($this->txt($msgFinal), $this->voiceOpts);
             $response->hangup();
             return $this->twimlResponse($response);
         }
@@ -302,26 +337,31 @@ class UraIvrController extends Controller
         $uraCall->save();
 
         $gather = $response->gather([
-            'numDigits' => 3,
-            'action'    => '/api/ura/ivr/verify-cpf',
-            'method'    => 'POST',
-            'timeout'   => 10,
+            'input'         => 'dtmf speech',
+            'numDigits'     => 3,
+            'language'      => 'pt-BR',
+            'speechTimeout' => 'auto',
+            'action'        => '/api/ura/ivr/verify-cpf',
+            'method'        => 'POST',
+            'timeout'       => 10,
+            'hints'         => 'zero, um, dois, três, quatro, cinco, seis, sete, oito, nove, meia',
         ]);
 
         $gather->say(
-            $this->txt('Os números digitados não conferem. Por favor, tente novamente. '
-            . 'Digite os três primeiros números do seu C P F.'),
+            $this->txt('Os números informados não conferem. Por favor, tente novamente. '
+            . 'Informe os três primeiros números do seu C P F.'),
             $this->voiceOpts
         );
 
-        $response->say($this->txt('Não recebi os dígitos. Vou encerrar a ligação. Até logo.'), $this->voiceOpts);
+        $response->say($this->txt('Não recebi os números. Vou encerrar a ligação. Até logo.'), $this->voiceOpts);
         $response->hangup();
 
         return $this->twimlResponse($response);
     }
 
     // =========================================================================
-    //  STEP 4 — DEBT INFO: "Obrigado! Motivo da dívida... está ciente?" (speech)
+    //  STEP 4a — DEBT INFO: Mensagem de espera + redirect para buscar dívida
+    //  (retorna imediatamente para o Twilio tocar a mensagem de espera)
     // =========================================================================
 
     public function debtInfo(Request $request)
@@ -340,136 +380,30 @@ class UraIvrController extends Controller
 
         $this->initVoice($uraCall->empresa_id);
 
-        $empresa = Empresa::withoutGlobalScopes()->find($uraCall->empresa_id);
-
-        $uraCall->step = UraCall::STEP_DIVIDA_INFORMADA;
-        $uraCall->save();
-
-        // Agradecimento + informar motivo (speech para captar resposta)
-        $gather = $response->gather([
-            'input'         => 'speech',
-            'language'      => 'pt-BR',
-            'speechTimeout' => 'auto',
-            'action'        => '/api/ura/ivr/ask-proposals',
-            'method'        => 'POST',
-            'hints'         => 'sim, não, sei, sabia, ciente, conheço, desconheço',
-        ]);
-
-        $defaultDebtInfo = "Muito obrigada por confirmar seus dados! "
-            . "O motivo do meu contato é referente a uma dívida que consta em seu nome. "
-            . "Você está ciente desta dívida?";
-
-        $debtMsg = $this->aiService->generateMessage(
-            $empresa,
-            UraCall::STEP_DIVIDA_INFORMADA,
-            [],
-            $defaultDebtInfo
-        );
-
-        $gather->say($this->txt($debtMsg), $this->voiceOpts);
-
-        // Timeout — prosseguir mesmo assim (assume que ouviu)
-        $response->redirect('/api/ura/ivr/ask-proposals', ['method' => 'POST']);
-
-        return $this->twimlResponse($response);
-    }
-
-    // =========================================================================
-    //  STEP 5 — ASK PROPOSALS: "Deseja ouvir as propostas?" (speech)
-    // =========================================================================
-
-    public function askProposals(Request $request)
-    {
-        $callSid      = $request->input('CallSid');
-        $speechResult = $request->input('SpeechResult');
-        Log::info("[IVR-ASK-PROPOSALS] CallSid: {$callSid} | Speech: '{$speechResult}'");
-
-        $uraCall = UraCall::findByCallSid($callSid);
-        $response = new VoiceResponse();
-
-        if (!$uraCall) {
-            $response->say($this->txt('Erro interno. Até logo.'), $this->voiceOpts);
-            $response->hangup();
-            return $this->twimlResponse($response);
-        }
-
-        $this->initVoice($uraCall->empresa_id);
-
-        // Independente da resposta sobre ciência, perguntar sobre propostas
-        $gather = $response->gather([
-            'input'         => 'speech',
-            'language'      => 'pt-BR',
-            'speechTimeout' => 'auto',
-            'action'        => '/api/ura/ivr/proposal-response',
-            'method'        => 'POST',
-            'hints'         => 'sim, não, quero, pode, claro, não quero',
-        ]);
-
-        $gather->say(
-            $this->txt('Deseja ouvir as propostas de quitação que temos para você?'),
-            $this->voiceOpts
-        );
-
-        // Timeout — encerrar educadamente
+        // Mensagem de espera com pausas ANTES do redirect para preencher o tempo
         $response->say(
-            $this->txt('Tudo bem, sem problemas. Caso queira negociar futuramente, estamos à disposição. Até logo!'),
+            $this->txt('Só um instante enquanto valido seus dados, por favor.'),
             $this->voiceOpts
         );
-        $response->hangup();
-
-        return $this->twimlResponse($response);
-    }
-
-    // =========================================================================
-    //  STEP 6 — PROPOSAL RESPONSE: Processa fala → buscar ou encerrar
-    // =========================================================================
-
-    public function proposalResponse(Request $request)
-    {
-        $callSid      = $request->input('CallSid');
-        $speechResult = $request->input('SpeechResult');
-        $confidence   = $request->input('Confidence', 0);
-        Log::info("[IVR-PROPOSAL-RESPONSE] CallSid: {$callSid} | Speech: '{$speechResult}' | Confidence: {$confidence}");
-
-        $uraCall = UraCall::findByCallSid($callSid);
-        $response = new VoiceResponse();
-
-        if (!$uraCall) {
-            $response->say($this->txt('Erro interno. Até logo.'), $this->voiceOpts);
-            $response->hangup();
-            return $this->twimlResponse($response);
-        }
-
-        $this->initVoice($uraCall->empresa_id);
-
-        // Se claramente disse "não" → encerrar
-        if ($this->isSpeechNegative($speechResult)) {
-            $uraCall->step   = UraCall::STEP_FINALIZADO;
-            $uraCall->result = 'cliente_recusou';
-            $uraCall->save();
-
-            $response->say(
-                $this->txt('Tudo bem, sem problemas. Caso queira negociar futuramente, estamos à disposição. '
-                . 'Tenha um ótimo dia. Até logo!'),
-                $this->voiceOpts
-            );
-            $response->hangup();
-            return $this->twimlResponse($response);
-        }
-
-        // Positivo ou ambíguo → buscar dívida
+        $response->pause(['length' => 2]);
         $response->say(
-            $this->txt('Perfeito! Vou buscar as informações da sua dívida. Um momento, por favor.'),
+            $this->txt('Estou acessando o sistema.'),
             $this->voiceOpts
         );
-
+        $response->pause(['length' => 3]);
+        $response->say(
+            $this->txt('Já estou finalizando.'),
+            $this->voiceOpts
+        );
+        $response->pause(['length' => 2]);
         $response->redirect('/api/ura/ivr/fetch-debt', ['method' => 'POST']);
 
         return $this->twimlResponse($response);
     }
 
     // =========================================================================
-    //  STEP 7 — FETCH DEBT: Busca API + "Localizei!" + apresenta opções (DTMF)
+    //  STEP 4b — FETCH DEBT: Busca dívida na API + apresenta oferta à vista
+    //  (chamado após a mensagem de espera ser tocada)
     // =========================================================================
 
     public function fetchDebt(Request $request)
@@ -488,8 +422,9 @@ class UraIvrController extends Controller
 
         $this->initVoice($uraCall->empresa_id);
 
-        $empresa = Empresa::withoutGlobalScopes()->find($uraCall->empresa_id);
+        $empresa = Empresa::withoutGlobalScopes()->with('configuracao')->find($uraCall->empresa_id);
         $contato = Contato::withoutGlobalScopes()->find($uraCall->contato_id);
+        $nomeCredora = $empresa->nome_credora ?? $empresa->nome;
 
         if (!$contato || empty($contato->cpf)) {
             Log::error("[IVR-FETCH-DEBT] Contato sem CPF | UraCall #{$uraCall->id}");
@@ -498,13 +433,12 @@ class UraIvrController extends Controller
             return $this->twimlResponse($response);
         }
 
-        // Usar CPF completo do contato (do mailing)
+        // Consultar dívida via API (cliente ouviu música de espera enquanto isso carrega)
         $cpfLimpo = preg_replace('/\D/', '', $contato->cpf);
         $uraCall->cpf = $cpfLimpo;
         $uraCall->step = UraCall::STEP_CPF_RECEBIDO;
         $uraCall->save();
 
-        // Consultar dívida via API Adora
         $divida = $this->uraService->consultarDividaApi($cpfLimpo);
 
         if (!$divida || empty($divida['opcoes'])) {
@@ -525,13 +459,24 @@ class UraIvrController extends Controller
             return $this->twimlResponse($response);
         }
 
-        $opcoes = $divida['opcoes'];
+        // Separar opções: à vista e parcelado
+        $opcaoVista = null;
+        $opcaoParcelada = null;
+        foreach ($divida['opcoes'] as $opcao) {
+            if ($opcao['tipo'] === 'avista' && !$opcaoVista) {
+                $opcaoVista = $opcao;
+            } elseif ($opcao['tipo'] === 'parcelado' && !$opcaoParcelada) {
+                $opcaoParcelada = $opcao;
+            }
+        }
 
         // Guardar dados da API
         $dadosSalvos = $uraCall->selected_option ?? [];
-        $uraCall->step            = UraCall::STEP_PROPOSTA_APRESENTADA;
+        $uraCall->step = UraCall::STEP_PROPOSTA_APRESENTADA;
         $uraCall->selected_option = array_merge($dadosSalvos, [
-            'opcoes_disponiveis' => $opcoes,
+            'opcoes_disponiveis' => $divida['opcoes'],
+            'opcao_vista'        => $opcaoVista,
+            'opcao_parcelada'    => $opcaoParcelada,
             'api_data' => [
                 'proposal_id'   => $divida['proposal_id'],
                 'debit_id'      => $divida['debit_id'],
@@ -543,183 +488,80 @@ class UraIvrController extends Controller
         ]);
         $uraCall->save();
 
-        // "Localizei!" + opções via Gather DTMF
-        $gather = $response->gather([
-            'numDigits' => 1,
-            'action'    => '/api/ura/ivr/select',
-            'method'    => 'POST',
-            'timeout'   => 15,
-        ]);
+        $valorTotal = $divida['total_extenso'];
+        $dataVista  = Carbon::now()->addDay()->format('d/m');
 
-        $defaultOptions = "Pronto, localizei sua dívida! "
-            . "Encontrei uma pendência no valor de {$divida['total_extenso']}. "
-            . "Temos as seguintes opções de negociação: ";
-        foreach ($opcoes as $opcao) {
-            $defaultOptions .= $opcao['descricao_voz'] . ' ';
-        }
-        $defaultOptions .= "Para escolher, digite o número da opção desejada.";
+        if ($opcaoVista) {
+            // Apresentar dívida + oferta à vista
+            $valorVistaExtenso = $this->numberToWords->valorPorExtenso($opcaoVista['valor_total']);
 
-        $optionsMsg = $this->aiService->generateMessage(
-            $empresa,
-            UraCall::STEP_PROPOSTA_APRESENTADA,
-            [],
-            $defaultOptions
-        );
+            $defaultMsg = "Olha, estou entrando em contato referente a uma pendência em seu nome, "
+                . "no valor atualizado de {$valorTotal}. "
+                . "Hoje temos uma excelente condição para você quitar seu débito por apenas {$valorVistaExtenso}";
 
-        $gather->say($this->txt($optionsMsg), $this->voiceOpts);
-
-        // Timeout — repetir
-        $response->say($this->txt('Não recebi sua escolha. Vou repetir as opções.'), $this->voiceOpts);
-        $response->redirect('/api/ura/ivr/repeat-options', ['method' => 'POST']);
-
-        return $this->twimlResponse($response);
-    }
-
-    // =========================================================================
-    //  STEP 7b — REPEAT OPTIONS (sem nova chamada API)
-    // =========================================================================
-
-    public function repeatOptions(Request $request)
-    {
-        $callSid = $request->input('CallSid');
-        Log::info("[IVR-REPEAT-OPTIONS] CallSid: {$callSid}");
-
-        $uraCall = UraCall::findByCallSid($callSid);
-        $response = new VoiceResponse();
-
-        if (!$uraCall) {
-            $response->say($this->txt('Erro interno. Até logo.'), $this->voiceOpts);
-            $response->hangup();
-            return $this->twimlResponse($response);
-        }
-
-        $this->initVoice($uraCall->empresa_id);
-
-        $dadosSalvos = $uraCall->selected_option ?? [];
-        $opcoes      = $dadosSalvos['opcoes_disponiveis'] ?? [];
-
-        if (empty($opcoes)) {
-            $response->say($this->txt('Não há opções disponíveis. Até logo.'), $this->voiceOpts);
-            $response->hangup();
-            return $this->twimlResponse($response);
-        }
-
-        $gather = $response->gather([
-            'numDigits' => 1,
-            'action'    => '/api/ura/ivr/select',
-            'method'    => 'POST',
-            'timeout'   => 15,
-        ]);
-
-        $textoOpcoes = 'As opções são: ';
-        foreach ($opcoes as $opcao) {
-            $textoOpcoes .= $opcao['descricao_voz'] . ' ';
-        }
-        $textoOpcoes .= 'Digite o número da opção desejada.';
-
-        $gather->say($this->txt($textoOpcoes), $this->voiceOpts);
-
-        $response->say($this->txt('Não recebi sua escolha. Vou encerrar a ligação. Até logo.'), $this->voiceOpts);
-        $response->hangup();
-
-        return $this->twimlResponse($response);
-    }
-
-    // =========================================================================
-    //  STEP 8 — SELECT: Escolha de opção (DTMF) + pede confirmação (DTMF)
-    // =========================================================================
-
-    public function select(Request $request)
-    {
-        $callSid = $request->input('CallSid');
-        $digits  = $request->input('Digits');
-        Log::info("[IVR-SELECT] CallSid: {$callSid} | Digits: {$digits}");
-
-        $uraCall = UraCall::findByCallSid($callSid);
-        $response = new VoiceResponse();
-
-        if (!$uraCall) {
-            $response->say($this->txt('Erro interno. Até logo.'), $this->voiceOpts);
-            $response->hangup();
-            return $this->twimlResponse($response);
-        }
-
-        $this->initVoice($uraCall->empresa_id);
-
-        $dadosSalvos = $uraCall->selected_option ?? [];
-        $opcoes      = $dadosSalvos['opcoes_disponiveis'] ?? [];
-        $escolha     = intval($digits);
-
-        $opcaoEscolhida = null;
-        foreach ($opcoes as $opcao) {
-            if ($opcao['numero'] === $escolha) {
-                $opcaoEscolhida = $opcao;
-                break;
+            if ($opcaoVista['desconto'] > 0) {
+                $defaultMsg .= ", com {$opcaoVista['desconto']} por cento de desconto";
             }
-        }
 
-        if (!$opcaoEscolhida) {
+            $defaultMsg .= ". Posso te encaminhar o boleto com vencimento em {$dataVista}?";
+
+            $debtMsg = $this->aiService->generateMessage(
+                $empresa,
+                UraCall::STEP_PROPOSTA_APRESENTADA,
+                [
+                    'valor_total'  => $valorTotal,
+                    'valor_vista'  => $valorVistaExtenso,
+                    'desconto'     => $opcaoVista['desconto'] ?? 0,
+                    'data_vista'   => $dataVista,
+                    'nome_credora' => $nomeCredora,
+                ],
+                $defaultMsg
+            );
+
             $gather = $response->gather([
-                'numDigits' => 1,
-                'action'    => '/api/ura/ivr/select',
-                'method'    => 'POST',
-                'timeout'   => 15,
+                'input'         => 'speech',
+                'language'      => 'pt-BR',
+                'speechTimeout' => 'auto',
+                'action'        => '/api/ura/ivr/cash-response',
+                'method'        => 'POST',
+                'hints'         => 'sim, não, pode, quero, aceito, não quero, não posso',
             ]);
 
-            $textoOpcoes = 'Opção inválida. As opções são: ';
-            foreach ($opcoes as $opcao) {
-                $textoOpcoes .= $opcao['descricao_voz'] . ' ';
-            }
-            $textoOpcoes .= 'Digite o número da opção desejada.';
+            $gather->say($this->txt($debtMsg), $this->voiceOpts);
 
-            $gather->say($this->txt($textoOpcoes), $this->voiceOpts);
+            // Timeout → tratar como recusa, ir para extensão
+            $response->say($this->txt('Não consegui ouvir sua resposta.'), $this->voiceOpts);
+            $response->redirect('/api/ura/ivr/cash-response', ['method' => 'POST']);
 
-            $response->say($this->txt('Não recebi sua escolha. Vou encerrar a ligação. Até logo.'), $this->voiceOpts);
+        } elseif ($opcaoParcelada) {
+            // Sem opção à vista — apresentar parcelamento direto
+            $response->redirect('/api/ura/ivr/offer-installments', ['method' => 'POST']);
+
+        } else {
+            // Sem nenhuma opção válida
+            $response->say(
+                $this->txt('No momento não há opções de negociação disponíveis. Até logo.'),
+                $this->voiceOpts
+            );
+            $uraCall->step   = UraCall::STEP_FINALIZADO;
+            $uraCall->result = 'sem_opcoes';
+            $uraCall->save();
             $response->hangup();
-            return $this->twimlResponse($response);
         }
-
-        // Salvar opção selecionada
-        $uraCall->step = UraCall::STEP_CONFIRMANDO;
-        $uraCall->selected_option = array_merge($dadosSalvos, ['opcao_selecionada' => $opcaoEscolhida]);
-        $uraCall->save();
-
-        // Pedir confirmação via DTMF
-        $gather = $response->gather([
-            'numDigits' => 1,
-            'action'    => '/api/ura/ivr/confirm',
-            'method'    => 'POST',
-            'timeout'   => 10,
-        ]);
-
-        $defaultConfirm = "Você escolheu a {$opcaoEscolhida['descricao_voz']} "
-            . "Para confirmar, digite 1. Para voltar às opções, digite 2.";
-
-        $empresa = Empresa::withoutGlobalScopes()->find($uraCall->empresa_id);
-        $confirmMsg = $this->aiService->generateMessage(
-            $empresa,
-            UraCall::STEP_CONFIRMANDO,
-            ['opcao_escolhida' => $opcaoEscolhida['descricao_voz']],
-            $defaultConfirm
-        );
-
-        $gather->say($this->txt($confirmMsg), $this->voiceOpts);
-
-        $response->say($this->txt('Não recebi sua confirmação. Vou encerrar a ligação. Até logo.'), $this->voiceOpts);
-        $response->hangup();
 
         return $this->twimlResponse($response);
     }
 
     // =========================================================================
-    //  STEP 9 — CONFIRM: Confirma acordo (DTMF) ou volta
+    //  STEP 5 — CASH RESPONSE: Aceita → acordo. Recusa → oferta D+5 (speech)
     // =========================================================================
 
-    public function confirm(Request $request)
+    public function cashResponse(Request $request)
     {
-        $callSid = $request->input('CallSid');
-        $digits  = $request->input('Digits');
-        Log::info("[IVR-CONFIRM] CallSid: {$callSid} | Digits: {$digits}");
+        $callSid      = $request->input('CallSid');
+        $speechResult = $request->input('SpeechResult');
+        $confidence   = $request->input('Confidence', 0);
+        Log::info("[IVR-CASH-RESPONSE] CallSid: {$callSid} | Speech: '{$speechResult}' | Confidence: {$confidence}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -732,23 +574,284 @@ class UraIvrController extends Controller
 
         $this->initVoice($uraCall->empresa_id);
 
-        if ($digits === '2') {
-            $uraCall->step = UraCall::STEP_PROPOSTA_APRESENTADA;
-            $uraCall->save();
-            $response->redirect('/api/ura/ivr/repeat-options', ['method' => 'POST']);
-            return $this->twimlResponse($response);
+        $dadosSalvos = $uraCall->selected_option ?? [];
+        $opcaoVista  = $dadosSalvos['opcao_vista'] ?? null;
+        $apiData     = $dadosSalvos['api_data'] ?? null;
+
+        // Se disse SIM → firmar acordo à vista
+        if ($this->isSpeechPositive($speechResult)) {
+            return $this->firmarAcordo($response, $uraCall, $opcaoVista, $apiData, 'avista');
         }
 
-        if ($digits !== '1') {
-            $response->say($this->txt('Opção inválida. Vou encerrar a ligação. Até logo.'), $this->voiceOpts);
+        // Recusou ou sem resposta → oferecer extensão D+5
+        $dataEstendida = Carbon::now()->addDays(5)->format('d/m');
+        $valorVistaExtenso = $opcaoVista
+            ? $this->numberToWords->valorPorExtenso($opcaoVista['valor_total'])
+            : 'o valor';
+
+        $gather = $response->gather([
+            'input'         => 'speech',
+            'language'      => 'pt-BR',
+            'speechTimeout' => 'auto',
+            'action'        => '/api/ura/ivr/extension-response',
+            'method'        => 'POST',
+            'hints'         => 'sim, não, pode, quero, aceito, tá bom, não posso, não quero',
+        ]);
+
+        $gather->say(
+            $this->txt("Olha, eu consigo estender o pagamento deste valor de {$valorVistaExtenso} "
+            . "para o dia {$dataEstendida}. Fica bom pra você?"),
+            $this->voiceOpts
+        );
+
+        // Timeout → tratar como recusa, ir para parcelamento
+        $response->redirect('/api/ura/ivr/extension-response', ['method' => 'POST']);
+
+        return $this->twimlResponse($response);
+    }
+
+    // =========================================================================
+    //  STEP 6 — EXTENSION RESPONSE: Aceita → acordo. Recusa → parcelamento (speech)
+    // =========================================================================
+
+    public function extensionResponse(Request $request)
+    {
+        $callSid      = $request->input('CallSid');
+        $speechResult = $request->input('SpeechResult');
+        $confidence   = $request->input('Confidence', 0);
+        Log::info("[IVR-EXTENSION-RESPONSE] CallSid: {$callSid} | Speech: '{$speechResult}' | Confidence: {$confidence}");
+
+        $uraCall = UraCall::findByCallSid($callSid);
+        $response = new VoiceResponse();
+
+        if (!$uraCall) {
+            $response->say($this->txt('Erro interno. Até logo.'), $this->voiceOpts);
             $response->hangup();
             return $this->twimlResponse($response);
         }
 
-        // Confirmar acordo
+        $this->initVoice($uraCall->empresa_id);
+
+        $dadosSalvos    = $uraCall->selected_option ?? [];
+        $opcaoVista     = $dadosSalvos['opcao_vista'] ?? null;
+        $opcaoParcelada = $dadosSalvos['opcao_parcelada'] ?? null;
+        $apiData        = $dadosSalvos['api_data'] ?? null;
+
+        // Se disse SIM → firmar acordo à vista (com data estendida D+5)
+        if ($this->isSpeechPositive($speechResult)) {
+            return $this->firmarAcordo($response, $uraCall, $opcaoVista, $apiData, 'avista_estendido');
+        }
+
+        // Recusou → oferecer parcelamento (se disponível)
+        if (!$opcaoParcelada) {
+            $uraCall->step   = UraCall::STEP_FINALIZADO;
+            $uraCall->result = 'cliente_recusou';
+            $uraCall->save();
+
+            $response->say(
+                $this->txt('Infelizmente essas são as condições disponíveis que tenho hoje. '
+                . 'Eu ligo em outra oportunidade. Obrigada pela atenção! Até logo.'),
+                $this->voiceOpts
+            );
+            $response->hangup();
+            return $this->twimlResponse($response);
+        }
+
+        // Transição → verificar parcelamento
+        $response->say(
+            $this->txt('Certo, vou verificar uma opção de parcelamento pra você.'),
+            $this->voiceOpts
+        );
+        $response->pause(['length' => 1]);
+
+        // Apresentar parcelamento
+        $valorParcelaExtenso = $this->numberToWords->valorPorExtenso($opcaoParcelada['valor_parcela']);
+        $parcelasTexto       = $this->numberToWords->converterParcelasPorExtenso($opcaoParcelada['parcelas']);
+        $dataParcelada       = Carbon::now()->addDays(5)->format('d/m');
+
+        $gather = $response->gather([
+            'input'         => 'speech',
+            'language'      => 'pt-BR',
+            'speechTimeout' => 'auto',
+            'action'        => '/api/ura/ivr/installment-response',
+            'method'        => 'POST',
+            'hints'         => 'sim, não, pode, quero, aceito, tá bom, não posso, não quero',
+        ]);
+
+        $gather->say(
+            $this->txt("Consigo fazer pra você {$parcelasTexto} de {$valorParcelaExtenso}, "
+            . "com pagamento a partir do dia {$dataParcelada}. Posso te enviar o boleto?"),
+            $this->voiceOpts
+        );
+
+        // Timeout → tratar como recusa
+        $response->redirect('/api/ura/ivr/installment-response', ['method' => 'POST']);
+
+        return $this->twimlResponse($response);
+    }
+
+    // =========================================================================
+    //  STEP 6b — OFFER INSTALLMENTS: Quando não há opção à vista (direto parcelado)
+    // =========================================================================
+
+    public function offerInstallments(Request $request)
+    {
+        $callSid = $request->input('CallSid');
+        Log::info("[IVR-OFFER-INSTALLMENTS] CallSid: {$callSid}");
+
+        $uraCall = UraCall::findByCallSid($callSid);
+        $response = new VoiceResponse();
+
+        if (!$uraCall) {
+            $response->say($this->txt('Erro interno. Até logo.'), $this->voiceOpts);
+            $response->hangup();
+            return $this->twimlResponse($response);
+        }
+
+        $this->initVoice($uraCall->empresa_id);
+
+        $dadosSalvos    = $uraCall->selected_option ?? [];
+        $opcaoParcelada = $dadosSalvos['opcao_parcelada'] ?? null;
+
+        if (!$opcaoParcelada) {
+            $response->say($this->txt('Não há opções disponíveis no momento. Até logo.'), $this->voiceOpts);
+            $response->hangup();
+            return $this->twimlResponse($response);
+        }
+
+        $valorTotal      = $dadosSalvos['api_data']['total_extenso'] ?? '';
+        $valorParcelaExt = $this->numberToWords->valorPorExtenso($opcaoParcelada['valor_parcela']);
+        $parcelasTexto   = $this->numberToWords->converterParcelasPorExtenso($opcaoParcelada['parcelas']);
+        $dataParcelada   = Carbon::now()->addDays(5)->format('d/m');
+
+        $gather = $response->gather([
+            'input'         => 'speech',
+            'language'      => 'pt-BR',
+            'speechTimeout' => 'auto',
+            'action'        => '/api/ura/ivr/installment-response',
+            'method'        => 'POST',
+            'hints'         => 'sim, não, pode, quero, aceito, tá bom, não posso, não quero',
+        ]);
+
+        $gather->say(
+            $this->txt("Olha, estou entrando em contato referente a uma pendência em seu nome, "
+            . "no valor de {$valorTotal}. "
+            . "Consigo fazer pra você {$parcelasTexto} de {$valorParcelaExt}, "
+            . "com pagamento a partir do dia {$dataParcelada}. Posso te enviar o boleto?"),
+            $this->voiceOpts
+        );
+
+        // Timeout
+        $response->redirect('/api/ura/ivr/installment-response', ['method' => 'POST']);
+
+        return $this->twimlResponse($response);
+    }
+
+    // =========================================================================
+    //  STEP 7 — INSTALLMENT RESPONSE: Aceita → acordo. Recusa → encerrar
+    // =========================================================================
+
+    public function installmentResponse(Request $request)
+    {
+        $callSid      = $request->input('CallSid');
+        $speechResult = $request->input('SpeechResult');
+        $confidence   = $request->input('Confidence', 0);
+        Log::info("[IVR-INSTALLMENT-RESPONSE] CallSid: {$callSid} | Speech: '{$speechResult}' | Confidence: {$confidence}");
+
+        $uraCall = UraCall::findByCallSid($callSid);
+        $response = new VoiceResponse();
+
+        if (!$uraCall) {
+            $response->say($this->txt('Erro interno. Até logo.'), $this->voiceOpts);
+            $response->hangup();
+            return $this->twimlResponse($response);
+        }
+
+        $this->initVoice($uraCall->empresa_id);
+
+        $dadosSalvos    = $uraCall->selected_option ?? [];
+        $opcaoParcelada = $dadosSalvos['opcao_parcelada'] ?? null;
+        $apiData        = $dadosSalvos['api_data'] ?? null;
+
+        // Se disse SIM → firmar acordo parcelado
+        if ($this->isSpeechPositive($speechResult)) {
+            return $this->firmarAcordo($response, $uraCall, $opcaoParcelada, $apiData, 'parcelado');
+        }
+
+        // Recusou ou sem resposta → encerrar educadamente
+        $uraCall->step   = UraCall::STEP_FINALIZADO;
+        $uraCall->result = 'cliente_recusou';
+        $uraCall->save();
+
+        $response->say(
+            $this->txt('Infelizmente essas são as condições disponíveis que tenho hoje. '
+            . 'Eu ligo em outra oportunidade. Obrigada pela atenção! Até logo.'),
+            $this->voiceOpts
+        );
+        $response->hangup();
+
+        return $this->twimlResponse($response);
+    }
+
+    // =========================================================================
+    //  FIRMAR ACORDO — Fase 1: salva escolha + retorna mensagem de espera
+    //  (retorna imediatamente para o Twilio tocar "Aguarde...")
+    // =========================================================================
+
+    private function firmarAcordo(VoiceResponse $response, UraCall $uraCall, ?array $opcaoEscolhida, ?array $apiData, string $tipo)
+    {
+        if (!$opcaoEscolhida || !$apiData) {
+            $response->say($this->txt('Erro ao processar sua escolha. Até logo.'), $this->voiceOpts);
+            $response->hangup();
+            return $this->twimlResponse($response);
+        }
+
+        // Salvar escolha e tipo no UraCall para o próximo step usar
+        $dadosSalvos = $uraCall->selected_option ?? [];
+        $uraCall->step = UraCall::STEP_CONFIRMANDO;
+        $uraCall->selected_option = array_merge($dadosSalvos, [
+            'opcao_selecionada' => $opcaoEscolhida,
+            'tipo_acordo'       => $tipo,
+        ]);
+        $uraCall->save();
+
+        // Retorna IMEDIATAMENTE — Twilio toca "Aguarde..." + espera ANTES da API call
+        $response->say($this->txt('Aguarde enquanto processamos seu acordo.'), $this->voiceOpts);
+        $response->pause(['length' => 2]);
+        $response->say($this->txt('Estou registrando sua negociação no sistema.'), $this->voiceOpts);
+        $response->pause(['length' => 3]);
+        $response->say($this->txt('Só mais um instante.'), $this->voiceOpts);
+        $response->pause(['length' => 2]);
+        $response->redirect('/api/ura/ivr/process-deal', ['method' => 'POST']);
+
+        return $this->twimlResponse($response);
+    }
+
+    // =========================================================================
+    //  FIRMAR ACORDO — Fase 2: processa na API + retorna confirmação
+    //  (chamado após a mensagem de espera ser tocada)
+    // =========================================================================
+
+    public function processDeal(Request $request)
+    {
+        $callSid = $request->input('CallSid');
+        Log::info("[IVR-PROCESS-DEAL] CallSid: {$callSid}");
+
+        $uraCall = UraCall::findByCallSid($callSid);
+        $response = new VoiceResponse();
+
+        if (!$uraCall) {
+            $response->say($this->txt('Erro interno. Até logo.'), $this->voiceOpts);
+            $response->hangup();
+            return $this->twimlResponse($response);
+        }
+
+        $this->initVoice($uraCall->empresa_id);
+
         $dadosSalvos    = $uraCall->selected_option ?? [];
         $opcaoEscolhida = $dadosSalvos['opcao_selecionada'] ?? null;
         $apiData        = $dadosSalvos['api_data'] ?? null;
+        $tipo           = $dadosSalvos['tipo_acordo'] ?? 'avista';
 
         if (!$opcaoEscolhida || !$apiData) {
             $response->say($this->txt('Erro ao processar sua escolha. Até logo.'), $this->voiceOpts);
@@ -756,11 +859,12 @@ class UraIvrController extends Controller
             return $this->twimlResponse($response);
         }
 
-        $empresa = Empresa::withoutGlobalScopes()->find($uraCall->empresa_id);
+        $empresa = Empresa::withoutGlobalScopes()->with('configuracao')->find($uraCall->empresa_id);
+        $nomeCredora = $empresa->nome_credora ?? $empresa->nome;
+        $telefoneContato = $empresa->configuracao->telefone_contato ?? null;
+        $artigo = ($empresa->configuracao->artigo_empresa ?? 'a') === 'o' ? 'O' : 'A';
 
         try {
-            $response->say($this->txt('Aguarde enquanto processamos seu acordo.'), $this->voiceOpts);
-
             $resultado = $this->uraService->firmarAcordoApi($uraCall, $opcaoEscolhida, $apiData);
 
             if ($uraCall->queue_job_id) {
@@ -776,25 +880,38 @@ class UraIvrController extends Controller
                 }
             }
 
-            $parcelasTexto = $opcaoEscolhida['parcelas'] == 1
-                ? 'pagamento à vista'
-                : "{$opcaoEscolhida['parcelas']} parcelas";
+            // Data de vencimento baseada no tipo
+            $diasVencimento = ($tipo === 'avista') ? 1 : 5;
+            $dataVencimento = Carbon::now()->addDays($diasVencimento)->format('d/m/Y');
 
-            $defaultSuccess = "Perfeito! Seu acordo foi registrado com sucesso. "
-                . "Você optou por {$parcelasTexto}. "
-                . "Em breve você receberá as instruções de pagamento por S M S. "
-                . "Agradecemos sua atenção e desejamos um ótimo dia. Até logo!";
+            // Mensagem de confirmação
+            if ($opcaoEscolhida['parcelas'] == 1 || $tipo === 'avista' || $tipo === 'avista_estendido') {
+                $valorExtenso = $this->numberToWords->valorPorExtenso($opcaoEscolhida['valor_total']);
 
-            $successMsg = $this->aiService->generateMessage(
-                $empresa,
-                'acordo_confirmado',
-                ['tipo_pagamento' => $parcelasTexto],
-                $defaultSuccess
-            );
+                $successMsg = "Prontinho! Então ficou assim: o acordo foi registrado à vista, "
+                    . "no valor de {$valorExtenso}, com vencimento para o dia {$dataVencimento}. "
+                    . "Em alguns instantes você receberá o código de barras via S M S para realizar seu pagamento. "
+                    . "É importante realizar o pagamento até a data combinada para garantir esse desconto.";
+            } else {
+                $parcelasTexto = $this->numberToWords->converterParcelasPorExtenso($opcaoEscolhida['parcelas']);
+                $valorParcelaExtenso = $this->numberToWords->valorPorExtenso($opcaoEscolhida['valor_parcela']);
+
+                $successMsg = "Prontinho! Acordo registrado em {$parcelasTexto} "
+                    . "de {$valorParcelaExtenso}. "
+                    . "Com vencimento da primeira parcela para o dia {$dataVencimento}. "
+                    . "Em alguns instantes você receberá o código de barras via S M S para realizar seu pagamento. "
+                    . "É importante realizar o pagamento até a data combinada para garantir esse desconto.";
+            }
+
+            if ($telefoneContato) {
+                $successMsg .= " Em caso de dúvidas, ligue no {$telefoneContato}, repetindo, {$telefoneContato}.";
+            }
+
+            $successMsg .= " {$artigo} {$nomeCredora} agradece sua atenção! Até logo.";
 
             $response->say($this->txt($successMsg), $this->voiceOpts);
 
-            Log::info("[IVR-ACORDO-OK] UraCall #{$uraCall->id} | DealId: {$resultado['deal_id']}");
+            Log::info("[IVR-ACORDO-OK] UraCall #{$uraCall->id} | Tipo: {$tipo} | DealId: {$resultado['deal_id']}");
 
         } catch (\Exception $e) {
             Log::error("[IVR-ACORDO-ERRO] Erro: {$e->getMessage()}");
@@ -920,6 +1037,45 @@ class UraIvrController extends Controller
     }
 
     /**
+     * Extrai dígitos numéricos de texto falado em português.
+     * Ex: "um dois três" → "123", "1 2 3" → "123", "cinco meia nove" → "569"
+     */
+    private function extractDigitsFromSpeech(?string $speechResult): ?string
+    {
+        if (empty($speechResult)) {
+            return null;
+        }
+
+        $text = mb_strtolower(trim($speechResult));
+
+        // Mapeia palavras faladas para dígitos
+        $numberWords = [
+            'zero' => '0', 'um' => '1', 'uma' => '1', 'dois' => '2', 'duas' => '2',
+            'três' => '3', 'tres' => '3', 'quatro' => '4', 'cinco' => '5',
+            'seis' => '6', 'meia' => '6', 'sete' => '7', 'oito' => '8', 'nove' => '9',
+        ];
+
+        // Percorre palavra a palavra, aceitando tanto dígitos ("3") quanto palavras ("oito")
+        $words = preg_split('/[\s,\.]+/', $text);
+        $result = '';
+        foreach ($words as $word) {
+            $word = trim($word);
+            if ($word === '') continue;
+
+            // Se é um dígito numérico direto (0-9)
+            if (preg_match('/^\d$/', $word)) {
+                $result .= $word;
+            }
+            // Se é uma palavra mapeada (oito, três, meia...)
+            elseif (isset($numberWords[$word])) {
+                $result .= $numberWords[$word];
+            }
+        }
+
+        return strlen($result) >= 3 ? substr($result, 0, 3) : null;
+    }
+
+    /**
      * Detecta se a fala do cliente é positiva (sim, sou eu, pode, etc).
      */
     private function isSpeechPositive(?string $speechResult): bool
@@ -938,6 +1094,8 @@ class UraIvrController extends Controller
             'é sim', 'sou sim', 'é ele', 'é ela',
             'quero', 'desejo', 'por favor', 'pode ser',
             'tá bom', 'tá', 'uhum', 'aham',
+            'aceito', 'fechado', 'bora', 'vamos',
+            'fica bom', 'tá ótimo', 'beleza', 'combinado',
         ];
 
         foreach ($patterns as $pattern) {
@@ -965,6 +1123,7 @@ class UraIvrController extends Controller
             'não sou', 'não é', 'não quero', 'não desejo',
             'de jeito nenhum', 'negativo', 'nunca', 'jamais',
             'pessoa errada', 'ligação errada', 'não conheço',
+            'não posso', 'não tenho', 'não consigo', 'impossível',
         ];
 
         foreach ($patterns as $pattern) {

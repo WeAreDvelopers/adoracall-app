@@ -11,6 +11,9 @@ class EmpresaConfiguracao extends Model
     protected $fillable = [
         'empresa_id',
         'nome_credora',
+        'nome_atendente',
+        'artigo_empresa',
+        'modo_ligacao',
         'percentual_desconto_alto',
         'percentual_desconto_baixo',
         'limite_valor_desconto_alto',
@@ -49,6 +52,7 @@ class EmpresaConfiguracao extends Model
             'limite_valor_desconto_alto'  => 500,
             'max_parcelas'               => 3,
             'valor_minimo_parcela'       => 100,
+            'modo_ligacao'               => 'ivr',
         ]);
     }
 }

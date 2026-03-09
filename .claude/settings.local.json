@@ -14,7 +14,9 @@
       "Bash(\"/c/Program Files/MySQL/MySQL Server 8.4/bin/mysql.exe\":*)",
       "Bash(composer require:*)",
       "Bash(test:*)",
-      "Bash(composer dump-autoload:*)"
+      "Bash(composer dump-autoload:*)",
+      "Bash(xargs:*)",
+      "Bash(find:*)"
     ],
     "additionalDirectories": [
       "D:\\Google Drive Empresa\\Servidor\\Dvelopers\\Adora\\adoracall-app-laravel\\routes",

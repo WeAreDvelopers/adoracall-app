@@ -27,7 +27,7 @@ class TwilioUraService
      * Inicia uma chamada Twilio outbound para o contato.
      * Cria registros UraCall e Ligacao para compatibilidade com o dashboard.
      */
-    public function initiateCall(Contato $contato, int $empresaId, int $mailingId, int $queueJobId): array
+    public function initiateCall(Contato $contato, int $empresaId, ?int $mailingId = null, ?int $queueJobId = null): array
     {
         $creds = IntegracaoService::getTwilioCredentials($empresaId);
 

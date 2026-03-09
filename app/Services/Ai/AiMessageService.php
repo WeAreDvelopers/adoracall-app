@@ -6,6 +6,8 @@ use App\Models\Empresa;
 use App\Services\Ai\Providers\AiProviderInterface;
 use App\Services\Ai\Providers\OpenAiProvider;
 use App\Services\IntegracaoService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class AiMessageService
@@ -45,11 +47,15 @@ PROMPT;
     /** Tamanho máximo permitido da resposta da IA (caracteres) */
     private const MAX_RESPONSE_LENGTH = 1500;
 
+    /** Tempo de cache das mensagens IA em minutos */
+    private const CACHE_TTL_MINUTES = 30;
+
     /**
      * Gera mensagem para um step do fluxo IVR.
      *
      * Se use_ai=false ou se a IA falhar, retorna a mensagem padrão (fallback).
      * A IA NUNCA controla fluxo, step ou lógica de negócio.
+     * Respostas são cacheadas por empresa+step+hash da mensagem padrão.
      *
      * @param Empresa $empresa       Empresa/tenant atual
      * @param string  $step          Step atual do fluxo (para log)
@@ -64,6 +70,15 @@ PROMPT;
             return $defaultMessage;
         }
 
+        // Cache: mesma empresa + step + mesma mensagem modelo = mesma resposta
+        $cacheKey = "ai_msg_{$empresa->id}_{$step}_" . md5($defaultMessage);
+
+        $cached = Cache::get($cacheKey);
+        if ($cached) {
+            Log::info("[AI] Cache hit | empresa={$empresa->id} step={$step}");
+            return $cached;
+        }
+
         try {
             $provider = $this->resolveProvider($empresa);
 
@@ -73,6 +88,12 @@ PROMPT;
             }
 
             $prompt = !empty($empresa->ai_prompt) ? $empresa->ai_prompt : self::DEFAULT_PROMPT;
+
+            // Substituir nome da atendente no prompt padrão
+            $nomeAtendente = $data['nome_atendente'] ?? 'Angélica';
+            if ($nomeAtendente !== 'Angélica') {
+                $prompt = str_replace('Angélica', $nomeAtendente, $prompt);
+            }
 
             // Incluir mensagem padrão como modelo e step atual para contexto
             $data['modelo_mensagem'] = $defaultMessage;
@@ -88,7 +109,10 @@ PROMPT;
                 return $defaultMessage;
             }
 
-            Log::info("[AI] Mensagem gerada com sucesso | empresa={$empresa->id} step={$step} length=" . strlen($text));
+            // Cachear resposta
+            Cache::put($cacheKey, $text, Carbon::now()->addMinutes(self::CACHE_TTL_MINUTES));
+
+            Log::info("[AI] Mensagem gerada e cacheada | empresa={$empresa->id} step={$step} length=" . strlen($text));
 
             return $text;
 
@@ -110,7 +134,7 @@ PROMPT;
             return null;
         }
 
-        $model = $empresa->ai_model ?: 'gpt-4o';
+        $model = $empresa->ai_model ?: 'gpt-4o-mini';
 
         // Futuro: adicionar mais providers aqui (Claude, Gemini, etc)
         return match (true) {
