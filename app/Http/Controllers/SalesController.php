@@ -78,12 +78,6 @@ class SalesController extends Controller
 
             $lead->incrementarTentativas();
 
-            Log::info('📞 Iniciando chamada de vendas via Retell AI...');
-            Log::info('📱 From: ' . $from . ' | To: ' . $validated['to']);
-            Log::info('🤖 Agent ID (Sales): ' . $agentId);
-            Log::info('👤 Prospect: ' . $lead->nome_completo);
-            Log::info('🛍️ Produto: ' . $validated['produto']);
-            Log::info('🆔 Lead ID: ' . $lead->id);
 
             $client = new Client();
 
@@ -131,7 +125,6 @@ class SalesController extends Controller
                 'empresa_id'    => $lead->empresa_id,
             ];
 
-            Log::info('📤 Request body (Sales): ' . json_encode($requestBody));
 
             $retellResponse = $client->post($retellUrl, [
                 'headers' => [
@@ -143,7 +136,6 @@ class SalesController extends Controller
 
             $retellBody = json_decode($retellResponse->getBody()->getContents(), true);
 
-            Log::info('✅ Retell API Response (Sales): ' . json_encode($retellBody));
 
             // Criar registro de ligação de venda
             $ligacao = LigacaoVenda::create([
@@ -159,7 +151,6 @@ class SalesController extends Controller
                 ],
             ]);
 
-            Log::info('💾 Ligação de vendas registrada: ID ' . $ligacao->id);
 
             DB::commit();
 
@@ -325,7 +316,6 @@ class SalesController extends Controller
 
             $lead->save();
 
-            Log::info('✅ Interesse registrado - Lead ID: ' . $lead->id . ' | Interessado: ' . ($validated['interessado'] ? 'Sim' : 'Não'));
 
             return response()->json([
                 'success' => true,
@@ -408,7 +398,6 @@ class SalesController extends Controller
             $ligacao->detalhes = $detalhes;
             $ligacao->save();
 
-            Log::info('✅ Qualificação registrada - Lead ID: ' . $lead->id . ' | Score: ' . $validated['score'] . ' | Temperatura: ' . $validated['temperatura']);
 
             return response()->json([
                 'success'      => true,
@@ -497,7 +486,6 @@ class SalesController extends Controller
             $ligacao->proximos_passos = $validated['acao_definida'];
             $ligacao->save();
 
-            Log::info('✅ Próximos passos registrados - Lead ID: ' . $lead->id . ' | Ação: ' . $validated['acao_definida'] . ' | Canal: ' . $validated['canal_preferencia']);
 
             return response()->json([
                 'success'         => true,

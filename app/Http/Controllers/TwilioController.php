@@ -16,14 +16,9 @@ class TwilioController extends Controller
         $agentId = $creds['retell_agent_id'];
         $apiKey = $creds['retell_api_key'];
 
-        Log::info('🎤 TwilioController@voice chamado - Gerando TwiML para Retell');
-        Log::info("🤖 Agent ID: {$agentId}");
-        Log::info("🔑 API Key: " . substr($apiKey, 0, 10) . "...");
-        Log::info("📥 Request Twilio: " . json_encode($request->all()));
 
         $streamUrl = "wss://api.retellai.com/llm-websocket/{$agentId}";
 
-        Log::info("🌐 Stream URL gerada: {$streamUrl}");
 
         $twiml = <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
@@ -37,7 +32,6 @@ class TwilioController extends Controller
 </Response>
 XML;
 
-        Log::info("📤 TwiML Response: " . $twiml);
 
         return response($twiml, 200)
             ->header('Content-Type', 'text/xml');
@@ -50,7 +44,6 @@ XML;
         $from   = $request->input('From');
         $sid    = $request->input('CallSid');
 
-        Log::info("📞 Status da chamada: {$status} (SID: {$sid}) | To: {$to} | From: {$from}");
 
         return response('OK', 200);
     }

@@ -33,9 +33,6 @@ class SecurityController extends Controller
         ]);
 
         try {
-            Log::info('🔒 Validação de segurança iniciada');
-            Log::info('📞 Call ID: ' . $validated['call_id']);
-            Log::info('🆔 Contato ID: ' . $validated['contato_id']);
 
             // Buscar contato
             $contato = Contato::findOrFail($validated['contato_id']);
@@ -47,7 +44,6 @@ class SecurityController extends Controller
 
             // Verificar se já atingiu limite de tentativas
             if ($ligacao->atingiuLimiteValidacao(3)) {
-                Log::warning('⚠️ Limite de tentativas de validação atingido');
 
                 return response()->json([
                     'valid' => false,
@@ -80,7 +76,6 @@ class SecurityController extends Controller
                 $contato->status = 'validado';
                 $contato->save();
 
-                Log::info('✅ Validação bem-sucedida');
 
                 return response()->json([
                     'valid' => true,
@@ -101,9 +96,6 @@ class SecurityController extends Controller
 
             $tentativasRestantes = 3 - $ligacao->tentativas_validacao;
 
-            Log::warning('❌ Validação falhou - Tentativas restantes: ' . $tentativasRestantes);
-            Log::warning('CPF válido: ' . ($cpfValido ? 'Sim' : 'Não'));
-            Log::warning('Data válida: ' . ($dataValida ? 'Sim' : 'Não'));
 
             return response()->json([
                 'valid' => false,

@@ -72,7 +72,6 @@ class UraIvrController extends Controller
     public function welcome(Request $request)
     {
         $callSid = $request->input('CallSid');
-        Log::info("[IVR-WELCOME] CallSid: {$callSid}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -120,7 +119,6 @@ class UraIvrController extends Controller
         $callSid      = $request->input('CallSid');
         $speechResult = $request->input('SpeechResult');
         $confidence   = $request->input('Confidence', 0);
-        Log::info("[IVR-CONFIRM-IDENTITY] CallSid: {$callSid} | Speech: '{$speechResult}' | Confidence: {$confidence}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -135,7 +133,6 @@ class UraIvrController extends Controller
 
         // Se claramente disse "não" → encerrar educadamente
         if ($this->isSpeechNegative($speechResult)) {
-            Log::info("[IVR-CONFIRM-IDENTITY] Pessoa negou identidade | UraCall #{$uraCall->id}");
 
             $uraCall->step   = UraCall::STEP_FINALIZADO;
             $uraCall->result = 'pessoa_errada';
@@ -209,7 +206,6 @@ class UraIvrController extends Controller
     public function confirmIdentityRetry(Request $request)
     {
         $callSid = $request->input('CallSid');
-        Log::info("[IVR-CONFIRM-IDENTITY-RETRY] CallSid: {$callSid}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -255,12 +251,10 @@ class UraIvrController extends Controller
         $callSid      = $request->input('CallSid');
         $digits       = $request->input('Digits');
         $speechResult = $request->input('SpeechResult');
-        Log::info("[IVR-VERIFY-CPF] CallSid: {$callSid} | Digits: {$digits} | Speech: '{$speechResult}'");
 
         // Se veio por speech, extrair dígitos da fala
         if (empty($digits) && !empty($speechResult)) {
             $digits = $this->extractDigitsFromSpeech($speechResult);
-            Log::info("[IVR-VERIFY-CPF] Dígitos extraídos da fala: {$digits}");
         }
 
         // Garantir que digits é string (nunca null na comparação)
@@ -292,7 +286,6 @@ class UraIvrController extends Controller
         }
         $esperado = (string) ($esperado ?? '');
 
-        Log::info("[IVR-VERIFY-CPF] Comparando | digits='{$digits}' esperado='{$esperado}'");
 
         // Controle de tentativas
         $dadosSalvos = $uraCall->selected_option ?? [];
@@ -305,14 +298,12 @@ class UraIvrController extends Controller
             $uraCall->step = UraCall::STEP_IDENTIDADE_CONFIRMADA;
             $uraCall->save();
 
-            Log::info("[IVR-VERIFY-CPF] CPF confirmado | UraCall #{$uraCall->id} | Tentativa {$tentativas}");
 
             $response->redirect('/api/ura/ivr/debt-info', ['method' => 'POST']);
             return $this->twimlResponse($response);
         }
 
         // Dígitos incorretos ou não extraídos
-        Log::warning("[IVR-VERIFY-CPF] CPF incorreto | UraCall #{$uraCall->id} | Tentativa {$tentativas}/3 | Recebido={$digits} Esperado={$esperado}");
 
         if ($tentativas >= 3) {
             $uraCall->step   = UraCall::STEP_FINALIZADO;
@@ -367,7 +358,6 @@ class UraIvrController extends Controller
     public function debtInfo(Request $request)
     {
         $callSid = $request->input('CallSid');
-        Log::info("[IVR-DEBT-INFO] CallSid: {$callSid}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -409,7 +399,6 @@ class UraIvrController extends Controller
     public function fetchDebt(Request $request)
     {
         $callSid = $request->input('CallSid');
-        Log::info("[IVR-FETCH-DEBT] CallSid: {$callSid}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -561,7 +550,6 @@ class UraIvrController extends Controller
         $callSid      = $request->input('CallSid');
         $speechResult = $request->input('SpeechResult');
         $confidence   = $request->input('Confidence', 0);
-        Log::info("[IVR-CASH-RESPONSE] CallSid: {$callSid} | Speech: '{$speechResult}' | Confidence: {$confidence}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -619,7 +607,6 @@ class UraIvrController extends Controller
         $callSid      = $request->input('CallSid');
         $speechResult = $request->input('SpeechResult');
         $confidence   = $request->input('Confidence', 0);
-        Log::info("[IVR-EXTENSION-RESPONSE] CallSid: {$callSid} | Speech: '{$speechResult}' | Confidence: {$confidence}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -697,7 +684,6 @@ class UraIvrController extends Controller
     public function offerInstallments(Request $request)
     {
         $callSid = $request->input('CallSid');
-        Log::info("[IVR-OFFER-INSTALLMENTS] CallSid: {$callSid}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -756,7 +742,6 @@ class UraIvrController extends Controller
         $callSid      = $request->input('CallSid');
         $speechResult = $request->input('SpeechResult');
         $confidence   = $request->input('Confidence', 0);
-        Log::info("[IVR-INSTALLMENT-RESPONSE] CallSid: {$callSid} | Speech: '{$speechResult}' | Confidence: {$confidence}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -835,7 +820,6 @@ class UraIvrController extends Controller
     public function processDeal(Request $request)
     {
         $callSid = $request->input('CallSid');
-        Log::info("[IVR-PROCESS-DEAL] CallSid: {$callSid}");
 
         $uraCall = UraCall::findByCallSid($callSid);
         $response = new VoiceResponse();
@@ -911,7 +895,6 @@ class UraIvrController extends Controller
 
             $response->say($this->txt($successMsg), $this->voiceOpts);
 
-            Log::info("[IVR-ACORDO-OK] UraCall #{$uraCall->id} | Tipo: {$tipo} | DealId: {$resultado['deal_id']}");
 
         } catch (\Exception $e) {
             Log::error("[IVR-ACORDO-ERRO] Erro: {$e->getMessage()}");
@@ -941,12 +924,10 @@ class UraIvrController extends Controller
         $callSid       = $request->input('CallSid');
         $callStatus    = $request->input('CallStatus');
         $callDuration  = $request->input('CallDuration');
-        Log::info("[IVR-STATUS] CallSid: {$callSid} | Status: {$callStatus} | Duration: {$callDuration}");
 
         $uraCall = UraCall::findByCallSid($callSid);
 
         if (!$uraCall) {
-            Log::warning("[IVR-STATUS] UraCall não encontrada para CallSid: {$callSid}");
             return response('OK', 200);
         }
 
@@ -1025,7 +1006,6 @@ class UraIvrController extends Controller
 
         if (in_array($callStatus, ['busy', 'no-answer', 'failed'])) {
             $queueJob->marcarComoFalhou("IVR: chamada {$callStatus}");
-            Log::info("[IVR-RETRY] QueueJob {$queueJob->id} marcado para retry | status: {$callStatus}");
         } elseif ($callStatus === 'completed' && $uraCall->result !== 'acordo_firmado') {
             $queueJob->marcarComoCompletado([
                 'tipo'     => 'ivr_sem_acordo',

@@ -32,12 +32,10 @@ class ProcessarContatoIvrJob extends Job
             app()->instance('empresa_id', $queueJob->empresa_id);
         }
 
-        Log::info("[IVR-JOB-START] QueueJob {$this->queueJobId} | Tentativa: {$queueJob->tentativas}");
 
         // Verifica se o mailing ainda está ativo
         $mailing = $queueJob->mailing;
         if ($mailing->isPausado() || $mailing->status === 'cancelado') {
-            Log::warning("[IVR-JOB-PAUSED] Mailing {$mailing->id} está {$mailing->status}, adiando 5 min");
             $queueJob->proxima_tentativa = Carbon::now()->addMinutes(5);
             $queueJob->save();
             return;
@@ -45,7 +43,6 @@ class ProcessarContatoIvrJob extends Job
 
         $contato = $queueJob->contato;
 
-        Log::info("[IVR-JOB-CONTEXT] Mailing: {$mailing->nome} | Contato: {$contato->nome} | Tel: {$contato->telefone}");
 
         try {
             $queueJob->marcarComoProcessando(gethostname());
@@ -79,7 +76,6 @@ class ProcessarContatoIvrJob extends Job
             // Atualizar estatísticas do mailing
             $mailing->atualizarEstatisticas();
 
-            Log::info("[IVR-JOB-SUCCESS] Chamada iniciada | CallSid: {$resultado['call_sid']} | Tempo: " . round($duration * 1000) . "ms");
 
         } catch (\Exception $e) {
             Log::error("[IVR-JOB-ERROR] Erro: {$e->getMessage()}");
@@ -111,7 +107,6 @@ class ProcessarContatoIvrJob extends Job
             $queueJob->proxima_tentativa = Carbon::now()->addSeconds($delay);
             $queueJob->status            = 'pending';
 
-            Log::warning("[IVR-JOB-RETRY] Job {$this->queueJobId} retry em " . round($delay / 60) . "min (tentativa {$queueJob->tentativas}/{$maxTentativas})");
         }
 
         $queueJob->save();

@@ -71,7 +71,6 @@ class UserController extends Controller
 
             $user->generateApiToken();
 
-            Log::info("✅ Usuário criado: {$user->email} (role: {$user->role})");
 
             return response()->json([
                 'message' => 'Usuário criado com sucesso',
@@ -139,7 +138,6 @@ class UserController extends Controller
 
             $user->update($data);
 
-            Log::info("✅ Usuário atualizado: {$user->email}");
 
             return response()->json([
                 'message' => 'Usuário atualizado com sucesso',
@@ -178,7 +176,6 @@ class UserController extends Controller
         try {
             $user->delete();
 
-            Log::info("✅ Usuário deletado: {$user->email}");
 
             return response()->json([
                 'message' => 'Usuário deletado com sucesso',
@@ -219,7 +216,6 @@ class UserController extends Controller
 
             $status = $user->active ? 'ativado' : 'desativado';
 
-            Log::info("✅ Usuário {$status}: {$user->email}");
 
             return response()->json([
                 'message' => "Usuário {$status} com sucesso",

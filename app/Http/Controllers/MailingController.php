@@ -215,16 +215,6 @@ class MailingController extends Controller
 
             $mailing = Mailing::create($dados);
 
-            // Log da criação
-            Log::info('Campanha criada', [
-                'mailing_id' => $mailing->id,
-                'nome' => $mailing->nome,
-                'tipo_publico' => $mailing->tipo_publico,
-                'prioridade' => $mailing->prioridade,
-                'max_tentativas' => $mailing->max_tentativas,
-                'velocidade_contatos_hora' => $mailing->velocidade_contatos_hora,
-            ]);
-
             return response()->json([
                 'message' => 'Campanha criada com sucesso',
                 'mailing' => [
@@ -410,12 +400,6 @@ class MailingController extends Controller
             ]);
         }
 
-        Log::info("Iniciando importação de CSV", [
-            'mailing_id'    => $mailing->id,
-            'arquivo'       => $nomeArquivo,
-            'tamanho_bytes' => $arquivo->getSize(),
-            'mime_type'     => $mimeType,
-        ]);
 
         try {
             // Verificar se é Excel (o frontend converte para CSV antes de enviar,
@@ -606,10 +590,6 @@ class MailingController extends Controller
                         DB::beginTransaction();
                         $batchContatos = [];
 
-                        Log::info("Lote processado", [
-                            'linhas_processadas' => $linhaNumero,
-                            'sucesso'            => $stats['sucesso'],
-                        ]);
                     }
 
                 } catch (\Exception $e) {
@@ -671,12 +651,6 @@ class MailingController extends Controller
                 'erros' => $stats['erros'],
             ]);
 
-            Log::info("Importação concluída com sucesso", [
-                'mailing_id'   => $mailing->id,
-                'arquivo'      => $nomeArquivo,
-                'estatisticas' => $stats,
-                'tempo_total'  => round($tempoTotal, 2) . 's',
-            ]);
 
             return ApiResponseService::success([
                 'arquivo'      => $nomeArquivo,
@@ -913,7 +887,6 @@ class MailingController extends Controller
         }
 
         try {
-            \Log::info("🔄 [RETOMAR] Iniciando retomada da campanha {$mailing->id} ({$mailing->nome})");
 
             // Buscar contatos que ainda não foram completamente processados
             // (sem job OU com job pending que não foi processado)
@@ -924,7 +897,6 @@ class MailingController extends Controller
                 })
                 ->get();
 
-            \Log::info("🔄 [RETOMAR] Encontrados {$contatosSemJob->count()} contatos para reprocessar");
 
             // Criar QueueJobs para contatos que ainda não têm jobs ou têm jobs pendentes
             $jobsCriados = 0;
@@ -945,18 +917,14 @@ class MailingController extends Controller
                         'proxima_tentativa' => \Carbon\Carbon::now(),
                     ]);
                     $jobsCriados++;
-                    \Log::debug("✅ [RETOMAR] Job criado para contato {$contato->id} ({$contato->nome})");
                 }
             }
 
-            \Log::info("✅ [RETOMAR] {$jobsCriados} jobs criados para processamento");
 
             // Atualizar status do mailing para 'ativo'
             $mailing->retomar();
-            \Log::info("✅ [RETOMAR] Campanha {$mailing->id} retomada com status ATIVO");
 
             $totalNaFila = $mailing->queueJobs()->where('status', 'pending')->count();
-            \Log::info("✅ [RETOMAR] Campanha {$mailing->id} tem {$totalNaFila} jobs pendentes na fila");
 
             return response()->json([
                 'message'       => 'Campanha retomada com sucesso',
@@ -1098,7 +1066,6 @@ class MailingController extends Controller
 
             DB::commit();
 
-            \Log::info("[REINICIAR] Campanha {$mailing->id} reiniciada | {$jobsResetados} jobs resetados | {$totalPending} total pendentes");
 
             return response()->json([
                 'message'        => 'Fila reiniciada com sucesso',
@@ -1469,12 +1436,6 @@ class MailingController extends Controller
         $count = $query->count();
         $query->delete();
 
-        Log::info("Logs de importação removidos", [
-            'mailing_id'     => $id,
-            'arquivo'        => $request->arquivo ?? 'todos',
-            'logs_removidos' => $count,
-            'usuario_id'     => auth()->id(),
-        ]);
 
         return response()->json([
             'message'        => 'Logs removidos com sucesso',
@@ -1928,7 +1889,6 @@ class MailingController extends Controller
             $perPage = $request->get('per_page', 20); // Padrão 20 itens por página
             $page    = $request->get('page', 1);      // Página atual
 
-            Log::info('📞 [LIGACOES-STATS] Buscando estatísticas de ligações');
 
             // Estatísticas de QueueJobs (não paginado - estatísticas gerais)
             $jobsStats = QueueJob::selectRaw('
@@ -1953,7 +1913,6 @@ class MailingController extends Controller
                 ->orderBy('created_at', 'desc')                                      // Ordena por data de criação (mais recentes primeiro)
                 ->paginate($perPage);
 
-            Log::info('✅ [LIGACOES-STATS] Ligações recuperadas: ' . $ligacoesPaginadas->count());
 
         // Contatos por status (não paginado - estatísticas gerais)
         $contatosStats = Contato::selectRaw('

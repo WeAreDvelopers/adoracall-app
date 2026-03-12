@@ -41,11 +41,7 @@ class WebhookController extends Controller
      */
     public function handleRetellWebhook(Request $request)
     {
-        // Log de entrada
         $requestId = uniqid('webhook_');
-        Log::info("📥 [WEBHOOK-RECEIVED] ID: {$requestId} | Time: " . date('Y-m-d H:i:s'));
-        Log::debug("📥 [WEBHOOK-HEADERS] " . json_encode($request->headers->all()));
-        Log::debug("📥 [WEBHOOK-BODY] " . json_encode($request->all()));
 
         try {
             // Validar assinatura (opcional - se Retell envia)
@@ -59,13 +55,11 @@ class WebhookController extends Controller
             $metadata = $data['metadata'] ?? [];
             $contatoId = $metadata['contato_id'] ?? null;
 
-            Log::info("✅ [WEBHOOK-PARSED] Call ID: {$callId} | Status: {$status} | Contato: {$contatoId}");
 
             // Buscar ligação existente (sem Global Scope - webhook é público)
             $ligacao = Ligacao::withoutGlobalScopes()->where('call_id_retell', $callId)->first();
 
             if (!$ligacao) {
-                Log::warning("⚠️  [WEBHOOK-NOT-FOUND] Call ID {$callId} não encontrado no BD");
 
                 // Criar nova ligação se não existir
                 if ($contatoId) {
@@ -88,7 +82,6 @@ class WebhookController extends Controller
                         ]
                     ]);
 
-                    Log::info("✅ [WEBHOOK-CREATED] Nova ligação criada: ID {$ligacao->id}");
                 }
             } else {
                 // Atualizar ligação existente
@@ -112,14 +105,10 @@ class WebhookController extends Controller
                 $ligacao->detalhes = $detalhes;
                 $ligacao->save();
 
-                Log::info("✅ [WEBHOOK-UPDATED] Ligação {$ligacao->id} atualizada: {$oldStatus} → {$status}");
             }
 
             // Processar por tipo de evento
             $this->processWebhookEvent($status, $ligacao, $data);
-
-            // Log de sucesso
-            Log::info("✅ [WEBHOOK-PROCESSED] Webhook processado com sucesso: {$requestId}");
 
             return response()->json([
                 'success' => true,
@@ -147,19 +136,7 @@ class WebhookController extends Controller
         $contato = $ligacao->contato;
 
         switch ($status) {
-            case 'initiated':
-                Log::info("🔄 [WEBHOOK-EVENT] Ligação iniciada: {$ligacao->id}");
-                if ($contato) {
-                    Log::info("🔄 [WEBHOOK-EVENT-DETAIL] Contato: {$contato->nome} | Tel: {$contato->telefone}");
-                }
-                break;
-
-            case 'ongoing':
-                Log::info("📞 [WEBHOOK-EVENT] Ligação em andamento: {$ligacao->id}");
-                break;
-
             case 'completed':
-                Log::info("✅ [WEBHOOK-EVENT] Ligação completada: {$ligacao->id}");
                 $this->handleCallCompleted($ligacao, $data);
                 break;
 
@@ -169,13 +146,8 @@ class WebhookController extends Controller
                 break;
 
             case 'timeout':
-                Log::warning("⏰ [WEBHOOK-EVENT] Ligação expirou (timeout): {$ligacao->id}");
-                // Timeout = não atendeu, agendar retry
                 $this->handleCallTimeout($ligacao, $data);
                 break;
-
-            default:
-                Log::info("❓ [WEBHOOK-EVENT] Status desconhecido: {$status}");
         }
     }
 
@@ -212,11 +184,6 @@ class WebhookController extends Controller
             $conectada = $data['call_answered'] ?? ($duracao > 0); // Se teve duração, foi respondida
             $aceitouProposta = $data['proposta_aceita'] ?? false; // Flag se usuário aceitou proposta
 
-            Log::info("📊 [CALL-COMPLETED] Contato: {$contato->nome} | Duração: {$duracao}s | Respondida: " . ($conectada ? 'Sim' : 'Não'));
-
-            if ($transcricao) {
-                Log::info("📝 [CALL-TRANSCRIPTION] " . substr($transcricao, 0, 150) . "...");
-            }
 
             // ==== LÓGICA INTELIGENTE DE DECISÃO ====
             $houveTratativa = false;
@@ -224,7 +191,6 @@ class WebhookController extends Controller
 
             if (!$conectada) {
                 // Ligação não foi atendida
-                Log::warning("📞 [CALL-DECISION] Ligação não atendida - será reagendada para retry");
                 $contato->status = 'nao_atendida';
                 $contato->resultado = 'nao_atendida';
                 $proximaAcao = 'pending';
@@ -232,7 +198,6 @@ class WebhookController extends Controller
 
             } elseif ($duracao < 10) {
                 // Ligação foi atendida mas duração muito curta (provável desligamento sem conversa)
-                Log::warning("📞 [CALL-DECISION] Atendida mas duração curta ({$duracao}s) - será reagendada para retry");
                 $contato->status = 'desligou_rapido';
                 $contato->resultado = 'desligou_rapido';
                 $proximaAcao = 'pending';
@@ -240,7 +205,6 @@ class WebhookController extends Controller
 
             } elseif ($aceitouProposta) {
                 // Usuário aceitou proposta - SUCESSO FINAL!
-                Log::info("✅ [CALL-DECISION] Usuário aceitou proposta - tratativa concluída!");
                 $contato->status = 'acordo_realizado';
                 $contato->resultado = 'acordo_realizado';
                 $proximaAcao = 'completed';
@@ -249,7 +213,6 @@ class WebhookController extends Controller
             } else {
                 // Ligação completou, teve conversa decente, mas sem acordo final
                 // Isso pode significar: usuário recusou, quer pensar, etc
-                Log::warning("📞 [CALL-DECISION] Ligação completada mas sem decisão final - será reagendada para retry");
                 $contato->status = 'sem_tratativa';
                 $contato->resultado = 'sem_tratativa';
                 $proximaAcao = 'pending';
@@ -260,7 +223,6 @@ class WebhookController extends Controller
             $contato->ultima_ligacao = Carbon::now();
             $contato->save();
 
-            Log::info("✅ [CONTATO-UPDATED] Contato {$contato->id} ({$contato->nome}) → {$contato->status}");
 
             // ==== ATUALIZAR QUEUE JOB BASEADO NA DECISÃO ====
             if ($queueJob) {
@@ -304,7 +266,6 @@ class WebhookController extends Controller
             }
 
             // Erro técnico deve usar retry exponencial
-            Log::warning("🔄 [CALL-DECISION] Erro técnico - agendando retry com backoff exponencial");
             $contato->status = 'erro_ligacao';
             $contato->resultado = 'erro_' . $motivo;
             $contato->save();
@@ -325,7 +286,6 @@ class WebhookController extends Controller
         $queueJob = null;
 
         if ($contato) {
-            Log::warning("⏰ [CALL-TIMEOUT] Contato: {$contato->nome} - Timeout/Não atendeu");
 
             // Tentar encontrar QueueJob (sem Global Scope - webhook é público)
             $queueJob = QueueJob::withoutGlobalScopes()
@@ -347,7 +307,6 @@ class WebhookController extends Controller
             $contato->save();
 
             // Timeout = ninguém respondeu, agendar retry simples
-            Log::warning("🔄 [CALL-DECISION] Timeout - agendando retry");
             if ($queueJob) {
                 $this->atualizarQueueJobComResultado($queueJob, 'pending', [
                     'chamada_respondida' => false,
@@ -370,7 +329,6 @@ class WebhookController extends Controller
 
         if ($proximaAcao === 'completed') {
             // ✅ SUCESSO FINAL - Usuário forneceu tratativa (acordo)
-            Log::info("✅ [QUEUE-UPDATE] QueueJob {$queueJob->id} COMPLETADO - Tratativa realizada");
             $queueJob->status = 'completed';
             $queueJob->resultado = array_merge($queueJob->resultado ?? [], $detalhes);
             $queueJob->completed_at = Carbon::now();
@@ -392,8 +350,6 @@ class WebhookController extends Controller
                 $intervaloMinutos = intval(env('RETRY_INTERVAL_MINUTES', 5));
                 $proximaTentativa = Carbon::now()->addMinutes($intervaloMinutos);
 
-                Log::info("🔄 [QUEUE-UPDATE] QueueJob {$queueJob->id} RETRY AGENDADO - Tentativa {$queueJob->tentativas}/{$maxTentativas}");
-                Log::info("⏱️  Próxima tentativa em {$intervaloMinutos} minutos (" . $proximaTentativa->format('Y-m-d H:i:s') . ")");
 
                 $queueJob->status = 'pending';
                 $queueJob->proxima_tentativa = $proximaTentativa;
@@ -405,12 +361,10 @@ class WebhookController extends Controller
         }
 
         $queueJob->save();
-        Log::info("💾 [QUEUE-SAVED] QueueJob {$queueJob->id} salvo no banco de dados");
 
         // Atualizar estatísticas do mailing
         if ($mailing) {
             $mailing->atualizarEstatisticas();
-            Log::info("📊 [MAILING-STATS-UPDATED] Estatísticas do mailing {$mailing->id} atualizadas");
         }
     }
 
@@ -442,8 +396,6 @@ class WebhookController extends Controller
             $delaySegundos = pow(2, $queueJob->tentativas) * 60;
             $proximaTentativa = Carbon::now()->addSeconds($delaySegundos);
 
-            Log::warning("🔄 [QUEUE-EXPONENTIAL] QueueJob {$queueJob->id} - Retry exponencial agendado");
-            Log::warning("⏱️  Tentativa {$queueJob->tentativas}/{$maxTentativas} em " . round($delaySegundos / 60) . " minutos");
 
             $queueJob->status = 'pending';
             $queueJob->proxima_tentativa = $proximaTentativa;
@@ -456,7 +408,6 @@ class WebhookController extends Controller
         }
 
         $queueJob->save();
-        Log::info("💾 [QUEUE-SAVED] QueueJob {$queueJob->id} salvo com retry exponencial");
 
         if ($mailing) {
             $mailing->atualizarEstatisticas();
@@ -488,7 +439,6 @@ class WebhookController extends Controller
 
         // Se ambos existem, validar
         if ($signature && $secret) {
-            Log::debug("🔐 [WEBHOOK-SIGNATURE] Validando assinatura");
 
             // Retell usa HMAC-SHA256 para assinar o payload
             $payload = $request->getContent();
@@ -510,12 +460,6 @@ class WebhookController extends Controller
                 throw new \Exception('Webhook signature validation failed');
             }
 
-            Log::info("✅ [WEBHOOK-SIGNATURE-VALID] Assinatura validada com sucesso");
-        } else {
-            // Se secret não está configurado, log de aviso
-            if (!$secret) {
-                Log::warning("⚠️  [WEBHOOK-SECRET-MISSING] RETELL_WEBHOOK_SECRET não configurado - webhook não será validado!");
-            }
         }
     }
 
@@ -525,8 +469,6 @@ class WebhookController extends Controller
      */
     public function testWebhook()
     {
-        Log::info("🧪 [WEBHOOK-TEST] Teste de webhook executado");
-
         return response()->json([
             'success' => true,
             'message' => 'Webhook test bem-sucedido',
@@ -586,8 +528,6 @@ class WebhookController extends Controller
      */
     public function simulateWebhook(Request $request)
     {
-        Log::info("🧪 [WEBHOOK-SIMULATE] Simulando webhook para teste");
-
         $data = [
             'call_id' => 'test_' . uniqid(),
             'call_status' => $request->input('status', 'completed'),
@@ -597,7 +537,6 @@ class WebhookController extends Controller
             'duration' => $request->input('duration', 120),
         ];
 
-        Log::debug("🧪 [WEBHOOK-SIMULATE-DATA] " . json_encode($data));
 
         // Chamar a mesma função que o webhook real
         return $this->handleRetellWebhook(new Request($data));

@@ -35,7 +35,6 @@ class OpenAiProvider implements AiProviderInterface
     {
         $userMessage = $this->buildUserMessage($context);
 
-        Log::info("[AI-OPENAI] Gerando mensagem | model={$this->model} | context_keys=" . implode(',', array_keys($context)));
 
         $response = $this->client->post(self::API_URL, [
             'headers' => [
@@ -62,7 +61,6 @@ class OpenAiProvider implements AiProviderInterface
             throw new \RuntimeException('OpenAI retornou resposta vazia');
         }
 
-        Log::info("[AI-OPENAI] Mensagem gerada | tokens_used=" . ($data['usage']['total_tokens'] ?? '?'));
 
         return $text;
     }

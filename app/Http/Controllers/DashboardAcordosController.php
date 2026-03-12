@@ -140,7 +140,6 @@ class DashboardAcordosController extends Controller
                     ];
                 }
             } catch (\Exception $e) {
-                Log::debug('Erro ao carregar acordos (pode estar vazio)', ['erro' => $e->getMessage()]);
             }
 
             // Ordenar por data decrescente
@@ -176,7 +175,6 @@ class DashboardAcordosController extends Controller
     public function testSimple()
     {
         try {
-            Log::info('🧪 Iniciando teste simples');
 
             return response()->json([
                 'success' => true,
@@ -379,7 +377,6 @@ class DashboardAcordosController extends Controller
                     ->join('propostas_pagamento', 'acordos.proposta_id', '=', 'propostas_pagamento.id')
                     ->sum('propostas_pagamento.valor_proposta_numerico') ?? 0;
             } catch (\Exception $e) {
-                Log::debug('Erro ao calcular valor acordado', ['erro' => $e->getMessage()]);
             }
 
             // Contatos na fila (pendentes)
@@ -468,7 +465,6 @@ class DashboardAcordosController extends Controller
                 ->join('propostas_pagamento', 'acordos.proposta_id', '=', 'propostas_pagamento.id')
                 ->sum('propostas_pagamento.valor_proposta_numerico') ?? 0;
         } catch (\Exception $e) {
-            Log::warning('Erro ao processar valores de acordos', ['erro' => $e->getMessage()]);
             $valorTotal = 0;
         }
 
@@ -527,7 +523,6 @@ class DashboardAcordosController extends Controller
                 ->join('propostas_pagamento', 'acordos.proposta_id', '=', 'propostas_pagamento.id')
                 ->sum('propostas_pagamento.valor_proposta_numerico') ?? 0;
         } catch (\Exception $e) {
-            Log::warning('Erro ao processar valores de acordos', ['erro' => $e->getMessage()]);
             $acordosRealizados = 0;
         }
 
@@ -539,7 +534,6 @@ class DashboardAcordosController extends Controller
                 ->first()
                 ->desconto ?? 0;
         } catch (\Exception $e) {
-            Log::warning('Erro ao processar descontos', ['erro' => $e->getMessage()]);
             $desconto_total = 0;
         }
 

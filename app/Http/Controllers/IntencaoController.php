@@ -33,7 +33,6 @@ class IntencaoController extends Controller
     public function processar(Request $request)
     {
         try {
-            Log::info('Intenção detectada', $request->all());
 
             // Validação
             $validator = Validator::make($request->all(), [
@@ -91,7 +90,6 @@ class IntencaoController extends Controller
     public function gerarPropostaPagamento(Request $request)
     {
         try {
-            Log::info('Gerando proposta de pagamento', $request->all());
 
             // Validação
             $validator = Validator::make($request->all(), [
@@ -199,7 +197,6 @@ class IntencaoController extends Controller
     public function agendarPagamento(Request $request)
     {
         try {
-            Log::info('Agendando pagamento', $request->all());
 
             // Validação
             $validator = Validator::make($request->all(), [
@@ -262,7 +259,6 @@ class IntencaoController extends Controller
     public function interesseNegociar(Request $request)
     {
         try {
-            Log::info('Interesse em negociar detectado', $request->all());
 
             $validator = Validator::make($request->all(), [
                 'contato_id' => 'required|integer|exists:contatos,id',

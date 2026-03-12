@@ -282,7 +282,6 @@ class ConfiguracaoController extends Controller
                 ];
             } catch (\Exception $e) {
                 $retellError = $e->getMessage();
-                Log::warning("[DIAGNOSTICO] Erro ao consultar Retell API: {$retellError}");
             }
         }
 
@@ -329,7 +328,6 @@ class ConfiguracaoController extends Controller
             ],
         ];
 
-        Log::info("[DIAGNOSTICO] Empresa {$empresaId}: " . json_encode($resultado));
 
         return ApiResponseService::success($resultado);
     }

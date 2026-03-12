@@ -257,14 +257,6 @@ class URADevedorController extends Controller
             ]);
 
             // Log da ação
-            \Log::info('Proposta aceita via voz', [
-                'contato_id'  => $contato->id,
-                'cpf'         => $dados['cpf'],
-                'proposta_id' => $proposta->id,
-                'acordo_id'   => $acordo->id,
-                'valor'       => $valorFinal,
-                'parcelas'    => $dados['opcao_parcelas'],
-            ]);
 
             // Converter número de parcelas para extenso
             $parcelasEmExtenso = $this->converterParcelasPorExtenso($dados['opcao_parcelas']);
@@ -405,9 +397,6 @@ class URADevedorController extends Controller
      */
     public function criarAcordo(Request $request)
     {
-        Log::info('Recebendo solicitação para criar acordo via voz', [
-            'payload' => $request->all(),
-        ]);
         try {
             $dados = $this->validate($request, [
                 'cpf'                 => 'required|string|size:11',
@@ -502,15 +491,6 @@ class URADevedorController extends Controller
             ]);
 
             // Log
-            \Log::info('Acordo formalizado via agente de voz', [
-                'cpf'          => $dados['cpf'],
-                'contato_id'   => $contato->id,
-                'proposta_id'  => $proposta->id,
-                'acordo_id'    => $acordo->id,
-                'valor'        => $this->valorPorExtenso($valorTotal),
-                'parcelas'     => $numeroParcelas,
-                'payment_type' => $dados['payment_type'],
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -569,10 +549,6 @@ class URADevedorController extends Controller
      */
     public function criarAcordoGet($tipoAcordo, $cpf)
     {
-        Log::info('Recebendo solicitação para criar acordo via voz (GET)', [
-            'tipoAcordo' => $tipoAcordo,
-            'cpf'        => $cpf,
-        ]);
         try {
             // Mapear tipo de acordo para configurações
             $configAcordo = $this->obterConfiguracaoAcordo($tipoAcordo);
@@ -689,15 +665,6 @@ class URADevedorController extends Controller
             ]);
 
             // Log
-            \Log::info('Acordo formalizado via agente de voz', [
-                'cpf'          => $cpf,
-                'contato_id'   => $contato->id,
-                'proposta_id'  => $proposta->id,
-                'acordo_id'    => $acordo->id,
-                'valor'        => $this->valorPorExtenso($valorTotal),
-                'parcelas'     => $numeroParcelas,
-                'payment_type' => $paymentType,
-            ]);
 
             // ✅ Marcar ligação como tendo acordo firmado
             $ligacao->update(['acordo_id' => $acordo->id]);
@@ -774,7 +741,6 @@ class URADevedorController extends Controller
      */
     public function obterOpcoesAcordo($cpf)
     {
-        Log::info('Consultando opções de pagamento', ['cpf' => $cpf]);
         try {
             // Validar CPF
             $cpfValidado = ValidationService::validateCpf($cpf);
@@ -856,7 +822,6 @@ class URADevedorController extends Controller
      */
     public function obterStatusAcordo($acordoId)
     {
-        Log::info('Consultando status do acordo', ['acordoId' => $acordoId]);
         try {
             // Buscar acordo pelo UUID ou ID
             $acordo = Acordo::where('id', $acordoId)
@@ -955,13 +920,6 @@ class URADevedorController extends Controller
             $ticketId = 'TICKET-' . date('YmdHis') . '-' . Str::random(6);
 
             // Log de escalonamento
-            \Log::warning('Escalonamento para supervisor', [
-                'cpf'        => $dados['cpf'],
-                'contato_id' => $contato->id,
-                'ticket_id'  => $ticketId,
-                'reason'     => $dados['escalation_reason'] ?? 'Não especificado',
-                'attempts'   => $dados['negotiation_attempts'] ?? 0,
-            ]);
 
             return response()->json([
                 'success' => true,

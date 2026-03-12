@@ -24,11 +24,6 @@ class ApiResponseService
             'timestamp' => Carbon::now()->toIso8601String(),
         ], $extra);
 
-        Log::info('API Success Response', [
-            'status_code' => $statusCode,
-            'message' => $message,
-            'has_data' => $data !== null,
-        ]);
 
         return response()->json($response, $statusCode);
     }
@@ -159,13 +154,6 @@ class ApiResponseService
      */
     public static function logAction($action, $resourceType, $resourceId = null, $userId = null, $details = [])
     {
-        Log::info('Audit Action', array_merge([
-            'action' => $action,
-            'resource_type' => $resourceType,
-            'resource_id' => $resourceId,
-            'user_id' => $userId ?? auth()->id(),
-            'ip_address' => request()->ip(),
-        ], $details));
     }
 
     /**

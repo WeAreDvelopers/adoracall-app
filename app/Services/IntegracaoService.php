@@ -136,7 +136,6 @@ class IntegracaoService
         try {
             return Crypt::decryptString($valor);
         } catch (\Exception $e) {
-            Log::warning("[INTEGRACAO] Erro ao descriptografar {$campo}: " . $e->getMessage());
             return $default;
         }
     }

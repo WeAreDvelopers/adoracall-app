@@ -120,7 +120,6 @@ class ResultadosImportacaoController extends Controller
                 $csv .= "\"{$sentimento}\"\n";
             }
 
-            Log::info("✅ [EXPORT] Exportação realizada para mailing {$mailingId}");
 
             return response($csv, 200, [
                 'Content-Type' => 'text/csv; charset=utf-8',

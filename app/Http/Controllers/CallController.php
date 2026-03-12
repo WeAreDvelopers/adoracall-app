@@ -28,7 +28,6 @@ class CallController extends Controller
     {
         // Se for chamada de vendas, delegar para SalesController
         if ($request->input('tipo') === 'vendas') {
-            Log::info('🎯 Chamada de vendas detectada - delegando para SalesController');
 
             $salesController = app()->make('App\Http\Controllers\SalesController');
             return $salesController->startSalesCall($request);
@@ -73,13 +72,11 @@ class CallController extends Controller
         $config = $empresaId ? EmpresaConfiguracao::getForEmpresa($empresaId) : null;
         $modo = $config?->modo_ligacao ?? 'ivr';
 
-        Log::info("[CALL-MODE] empresa_id={$empresaId} | modo_ligacao={$modo} | config_exists=" . ($config ? 'sim' : 'nao'));
 
         if ($modo === 'ivr') {
             return $this->startIvrCall($request, $validated, $empresaId);
         }
 
-        Log::info("[CALL-RETELL] Iniciando chamada via Retell para empresa {$empresaId}");
 
         // Modo Retell
         $creds   = IntegracaoService::getCredentials($empresaId);
@@ -90,9 +87,6 @@ class CallController extends Controller
         $numeroEmpresa = env('COMPANY_PHONE', '(11) 3333-4444');
 
         // DEBUG: Verificar se API key está sendo carregada
-        Log::info('🔐 [RETELL-DEBUG] API Key carregada: ' . (empty($apiKey) ? 'VAZIA!' : substr($apiKey, 0, 10) . '...'));
-        Log::info('🤖 [RETELL-DEBUG] Agent ID carregada: ' . (empty($agentId) ? 'VAZIO!' : $agentId));
-        Log::info('📞 [RETELL-DEBUG] From Number carregada: ' . (empty($from) ? 'VAZIO!' : $from));
 
         try {
             DB::beginTransaction();
@@ -133,11 +127,6 @@ class CallController extends Controller
 
             $contato->incrementarTentativas();
 
-            Log::info('📞 Iniciando chamada via Retell AI...');
-            Log::info('📱 From: ' . $from . ' | To: ' . $validated['to']);
-            Log::info('🤖 Agent ID: ' . $agentId);
-            Log::info('👤 Cliente: ' . $contato->nome_completo);
-            Log::info('🆔 Contato ID: ' . $contato->id);
 
             $client = new Client();
 
@@ -180,7 +169,6 @@ class CallController extends Controller
                 ],
             ];
 
-            Log::info('📤 Request body: ' . json_encode($requestBody));
 
             $retellResponse = $client->post($retellUrl, [
                 'headers' => [
@@ -192,7 +180,6 @@ class CallController extends Controller
 
             $retellBody = json_decode($retellResponse->getBody()->getContents(), true);
 
-            Log::info('✅ Retell API Response: ' . json_encode($retellBody));
 
             // Criar registro de ligação
             $ligacao = Ligacao::create([
@@ -207,7 +194,6 @@ class CallController extends Controller
                 ]
             ]);
 
-            Log::info('💾 Ligação registrada: ID ' . $ligacao->id);
 
             DB::commit();
 
@@ -286,7 +272,6 @@ class CallController extends Controller
 
             $contato->incrementarTentativas();
 
-            Log::info("[IVR-MANUAL] Iniciando chamada IVR para contato {$contato->id}");
 
             // Iniciar chamada via TwilioUraService
             $uraService = app(TwilioUraService::class);

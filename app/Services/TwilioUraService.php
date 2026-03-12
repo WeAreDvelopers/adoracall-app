@@ -50,7 +50,6 @@ class TwilioUraService
             'step'         => UraCall::STEP_START,
         ]);
 
-        Log::info("[IVR-INITIATE] UraCall #{$uraCall->id} criada para contato {$contato->id}");
 
         try {
             $client = new TwilioClient($creds['twilio_account_sid'], $creds['twilio_auth_token']);
@@ -88,7 +87,6 @@ class TwilioUraService
             $contato->status = 'em_ligacao';
             $contato->save();
 
-            Log::info("[IVR-CALL-CREATED] CallSid: {$call->sid} | Ligacao: {$ligacao->id} | Contato: {$contato->id}");
 
             return [
                 'call_sid'    => $call->sid,
@@ -220,7 +218,6 @@ class TwilioUraService
             $opcaoEscolhida['payment_option_id']
         );
 
-        Log::info("[IVR-ADORA-CONFIRM] Resultado: " . json_encode($confirmResult));
 
         $dealId = $confirmResult['dealId'] ?? null;
 
@@ -230,7 +227,6 @@ class TwilioUraService
             try {
                 $dealDetails = $this->adoraApi->getDealDetails($dealId, $dadosApi['document'] ?? null);
             } catch (\Exception $e) {
-                Log::warning("[IVR-ADORA-DEAL] Erro ao buscar deal: {$e->getMessage()}");
             }
         }
 
@@ -295,7 +291,6 @@ class TwilioUraService
 
             DB::commit();
 
-            Log::info("[IVR-ACORDO] Acordo #{$acordo->id} firmado via API Adora | DealId: {$dealId} | Contato: {$contato->id}");
 
             // Extrair info do boleto se disponível
             $boleto = $dealDetails['debit']['boleto'] ?? null;

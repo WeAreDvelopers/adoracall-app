@@ -32,14 +32,12 @@ class AdoraApiService
      */
     public function requestProposals(string $cpf): array
     {
-        Log::info("[ADORA-API] requestProposals CPF: {$cpf}");
 
         $response = $this->client->post('/v3/proposal/request', [
             'headers' => ['identifier' => $cpf],
         ]);
 
         $data = json_decode($response->getBody()->getContents(), true);
-        Log::info("[ADORA-API] requestProposals response: " . json_encode($data));
 
         return $data;
     }
@@ -74,7 +72,6 @@ class AdoraApiService
         ]);
 
         $data = json_decode($response->getBody()->getContents(), true);
-        Log::info("[ADORA-API] getProposalDetails: " . json_encode($data));
 
         return $data;
     }
@@ -87,7 +84,6 @@ class AdoraApiService
      */
     public function confirmProposal(int $proposalId, int $debitId, int $paymentOptionId): array
     {
-        Log::info("[ADORA-API] confirmProposal: proposal={$proposalId} debit={$debitId} option={$paymentOptionId}");
 
         $response = $this->client->post("/v3/proposal/{$proposalId}/confirm", [
             'json' => [
@@ -97,7 +93,6 @@ class AdoraApiService
         ]);
 
         $data = json_decode($response->getBody()->getContents(), true);
-        Log::info("[ADORA-API] confirmProposal response: " . json_encode($data));
 
         return $data;
     }
@@ -120,7 +115,6 @@ class AdoraApiService
         ]);
 
         $data = json_decode($response->getBody()->getContents(), true);
-        Log::info("[ADORA-API] getDealDetails: " . json_encode($data));
 
         return $data;
     }

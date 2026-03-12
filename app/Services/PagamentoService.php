@@ -58,12 +58,6 @@ class PagamentoService
             // Envia o SMS
             $this->enviarSmsProposta($proposta, $opcoes['mensagem_customizada'] ?? null);
 
-            Log::info("Proposta criada e SMS enviado", [
-                'proposta_id' => $proposta->id,
-                'contato_id'  => $contato->id,
-                'telefone'    => $contato->telefone,
-                'valor'       => $valorProposta,
-            ]);
 
             return $proposta;
 
@@ -124,12 +118,6 @@ class PagamentoService
         // Cria a proposta no banco
         $proposta = PropostaPagamento::create($dadosProposta);
 
-        Log::info("Proposta de pagamento criada", [
-            'proposta_id' => $proposta->id,
-            'uuid'        => $proposta->uuid,
-            'tipo'        => $tipoProposta,
-            'valor'       => $valorProposta,
-        ]);
 
         return $proposta;
     }
@@ -264,11 +252,6 @@ class PagamentoService
             // Formata o telefone
             $telefone = $this->formatarTelefone($proposta->telefone);
 
-            Log::info("Enviando SMS via Twilio", [
-                'proposta_id'     => $proposta->id,
-                'telefone'        => $telefone,
-                'mensagem_length' => strlen($mensagem),
-            ]);
 
             // Envia o SMS via Twilio
             $message = $this->twilioClient->messages->create(
@@ -282,11 +265,6 @@ class PagamentoService
             // Atualiza a proposta com o SID da mensagem
             $proposta->marcarSmsEnviado($message->sid);
 
-            Log::info("SMS enviado com sucesso via Twilio", [
-                'proposta_id' => $proposta->id,
-                'message_sid' => $message->sid,
-                'status'      => $message->status,
-            ]);
 
             return true;
 
@@ -355,7 +333,6 @@ class PagamentoService
             $proposta = PropostaPagamento::where('twilio_message_sid', $messageSid)->first();
 
             if (! $proposta) {
-                Log::warning("Proposta não encontrada para MessageSid", ['message_sid' => $messageSid]);
                 return false;
             }
 
@@ -375,11 +352,6 @@ class PagamentoService
                     break;
             }
 
-            Log::info("Status do SMS atualizado", [
-                'proposta_id' => $proposta->id,
-                'message_sid' => $messageSid,
-                'status'      => $status,
-            ]);
 
             return true;
 
@@ -420,11 +392,6 @@ class PagamentoService
                 $contato->save();
             }
 
-            Log::info("Pagamento confirmado", [
-                'proposta_id'    => $proposta->id,
-                'valor_pago'     => $valorPago,
-                'transaction_id' => $transactionId,
-            ]);
 
             return true;
 
@@ -454,7 +421,6 @@ class PagamentoService
                 }
             }
 
-            Log::info("Propostas expiradas processadas", ['total' => $count]);
 
         } catch (Exception $e) {
             Log::error("Erro ao processar propostas expiradas", ['erro' => $e->getMessage()]);

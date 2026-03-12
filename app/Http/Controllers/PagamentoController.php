@@ -261,7 +261,6 @@ class PagamentoController extends Controller
     public function webhookTwilioSmsStatus(Request $request)
     {
         try {
-            Log::info('Webhook Twilio recebido', $request->all());
 
             $messageSid = $request->get('MessageSid');
             $status = $request->get('MessageStatus');
@@ -309,7 +308,6 @@ class PagamentoController extends Controller
     public function webhookPagamentoConfirmacao(Request $request)
     {
         try {
-            Log::info('Webhook de pagamento recebido', $request->all());
 
             // Validação básica
             $validator = Validator::make($request->all(), [

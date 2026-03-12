@@ -15,12 +15,10 @@ class ProposalService
     public function gerarPropostasParaCliente(Contato $contato): array
     {
         try {
-            Log::info("📊 Gerando propostas para cliente: {$contato->nome_completo}");
 
             // Analisar perfil do cliente
             $perfil = $this->analisarPerfil($contato);
 
-            Log::info("🎯 Perfil do cliente:", $perfil);
 
             // Gerar propostas baseadas no perfil
             $propostas = match($perfil['nivel_risco']) {
@@ -29,7 +27,6 @@ class ProposalService
                 'baixo' => $this->propostasBassoRisco($contato, $perfil),
             };
 
-            Log::info("✅ " . count($propostas) . " propostas geradas para: {$contato->nome_completo}");
 
             // Salvar propostas no banco
             foreach ($propostas as $proposta_data) {

@@ -14,7 +14,6 @@ class CallHistoryController extends Controller
     public function listRetellCalls(Request $request)
     {
         try {
-            Log::info('📞 Buscando histórico de chamadas do banco local...');
 
             // Query builder
             $query = CallHistory::query();
@@ -65,7 +64,6 @@ class CallHistoryController extends Controller
                 ->take($limit)
                 ->get();
 
-            Log::info("✅ {$calls->count()} chamadas recuperadas do banco local");
 
             // Formatar para o frontend
             $formattedCalls = $calls->map(function ($call) {
@@ -98,12 +96,10 @@ class CallHistoryController extends Controller
     public function getCallDetails($callId)
     {
         try {
-            Log::info('📞 Buscando detalhes da chamada no banco: ' . $callId);
 
             $call = CallHistory::where('call_id_retell', $callId)->first();
 
             if (! $call) {
-                Log::warning('⚠️ Chamada não encontrada no banco: ' . $callId);
 
                 return response()->json([
                     'success' => false,
@@ -111,7 +107,6 @@ class CallHistoryController extends Controller
                 ], 404);
             }
 
-            Log::info('✅ Detalhes recuperados para chamada: ' . $callId);
 
             return response()->json([
                 'success' => true,
@@ -136,7 +131,6 @@ class CallHistoryController extends Controller
         try {
             $dias = $request->get('days', 30);
 
-            Log::info("📊 Calculando estatísticas dos últimos {$dias} dias...");
 
             // Usar método estático do model
             $stats = CallHistory::estatisticas($dias);

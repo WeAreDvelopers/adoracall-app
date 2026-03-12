@@ -27,7 +27,6 @@ class RetellFunctionController extends Controller
     public function getPropostas(Request $request)
     {
         try {
-            Log::info('🔄 [Retell Function] getPropostas chamado', $request->all());
 
             // Tentar obter contato_id de diferentes fontes
             $contato_id = $request->input('contato_id') ??
@@ -55,7 +54,6 @@ class RetellFunctionController extends Controller
                 ], 404);
             }
 
-            Log::info("✅ Contato encontrado: {$contato->nome_completo} (ID: {$contato->id})");
 
             // Verificar se já existem propostas ativas
             $propostas_existentes = Proposta::where('contato_id', $contato_id)
@@ -68,10 +66,8 @@ class RetellFunctionController extends Controller
 
             // Se não houver propostas válidas, gerar novas
             if ($propostas_existentes->isEmpty()) {
-                Log::info("📊 Gerando novas propostas para {$contato->nome_completo}");
                 $propostas_data = $this->proposalService->gerarPropostasParaCliente($contato);
             } else {
-                Log::info("♻️ Usando propostas existentes para {$contato->nome_completo}");
                 $propostas_data = $propostas_existentes->toArray();
             }
 
@@ -85,7 +81,6 @@ class RetellFunctionController extends Controller
                 ];
             }, $propostas_data, array_keys($propostas_data));
 
-            Log::info('✅ ' . count($propostas_formatadas) . ' propostas formatadas para o agente');
 
             return response()->json([
                 'success'            => true,
@@ -115,7 +110,6 @@ class RetellFunctionController extends Controller
     public function aceitarProposta(Request $request)
     {
         try {
-            Log::info('🎯 [Retell Function] aceitarProposta chamado', $request->all());
 
             $contato_id        = $request->input('contato_id');
             $ligacao_id        = $request->input('ligacao_id');
@@ -125,7 +119,6 @@ class RetellFunctionController extends Controller
 
             // Validação
             if (! $contato_id || ! $proposta_tipo || ! $confirmacao_texto) {
-                Log::warning('⚠️ Dados incompletos para aceitar proposta');
                 return response()->json([
                     'success'             => false,
                     'error'               => 'Dados incompletos',
@@ -189,7 +182,6 @@ class RetellFunctionController extends Controller
             // Atualizar status do contato
             $contato->update(['status' => 'acordo_realizado']);
 
-            Log::info("✅ Acordo criado com sucesso. ID: {$acordo->id}");
 
             // Enviar confirmação (você pode integrar com seu gateway de pagamento aqui)
             $this->enviarConfirmacaoPagamento($contato, $acordo);
@@ -223,7 +215,6 @@ class RetellFunctionController extends Controller
         $base_url = config('app.payment_base_url', url('/pagamento'));
         $link     = $base_url . '/' . $acordo->id;
 
-        Log::info("💳 Link de pagamento gerado: {$link}");
 
         return $link;
     }
@@ -234,7 +225,6 @@ class RetellFunctionController extends Controller
      */
     private function enviarConfirmacaoPagamento(Contato $contato, Acordo $acordo): void
     {
-        Log::info("📧 Enviando confirmação para {$contato->telefone}");
 
         // TODO: Integrar com Twilio SMS ou serviço de email
         // Por enquanto, apenas logamos
@@ -249,8 +239,6 @@ class RetellFunctionController extends Controller
      */
     public function webhookLigacao(Request $request)
     {
-        Log::warning("⚠️ [DEPRECATED] RetellFunctionController@webhookLigacao está sendo chamado");
-        Log::info("📢 Redirecionando para WebhookController@handleRetellWebhook");
 
         // Redirecionar para o controlador principal que tem a lógica inteligente
         $webhookController = new WebhookController();

@@ -29,7 +29,6 @@ class RetellSyncService
     public function sincronizarChamadas(int $dias = 30, ?string $paginationKey = null): array
     {
         try {
-            Log::info("🔄 Iniciando sincronização de chamadas dos últimos {$dias} dias...");
 
             $requestBody = [
                 'filter_criteria' => [
@@ -62,7 +61,6 @@ class RetellSyncService
             $data = json_decode($response->getBody()->getContents(), true);
             $calls = is_array($data) && isset($data[0]) ? $data : [];
 
-            Log::info("📥 Recebidas " . count($calls) . " chamadas da Retell AI");
 
             $stats = [
                 'total' => count($calls),
@@ -86,7 +84,6 @@ class RetellSyncService
                 }
             }
 
-            Log::info("✅ Sincronização concluída: {$stats['created']} criadas, {$stats['updated']} atualizadas, {$stats['errors']} erros");
 
             return $stats;
 
@@ -102,7 +99,6 @@ class RetellSyncService
     private function processarChamada(array $callData): array
     {
         $chamada = json_encode($callData, true);
-        Log::info("Dados da ligação: {$chamada}");
         $callId = $callData['call_id'];
 
         // Buscar ou criar registro (sem Global Scope - sync processa todas as empresas)
@@ -251,7 +247,6 @@ class RetellSyncService
             // Salvar a ligação atualizada
             $ligacao->save();
 
-            Log::info("✅ Ligação ID {$ligacao->id} sincronizada com sucesso via Retell call_id {$callData['call_id']}");
 
         } catch (\Exception $e) {
             Log::error("❌ Erro ao sincronizar Ligacao ID {$ligacao->id}: " . $e->getMessage(), [
@@ -267,7 +262,6 @@ class RetellSyncService
     public function sincronizarChamadaEspecifica(string $callId): CallHistory
     {
         try {
-            Log::info("🔄 Sincronizando chamada específica: {$callId}");
 
             $response = $this->client->get("https://api.retellai.com/v2/get-call/{$callId}", [
                 'headers' => [
@@ -279,7 +273,6 @@ class RetellSyncService
 
             $result = $this->processarChamada($callData);
 
-            Log::info("✅ Chamada {$callId} sincronizada com sucesso");
 
             return $result['call_history'];
 
@@ -296,7 +289,6 @@ class RetellSyncService
     {
         $pendentes = CallHistory::precisaResync()->get();
 
-        Log::info("🔄 Resincronizando {$pendentes->count()} chamadas pendentes...");
 
         $stats = [
             'total' => $pendentes->count(),
@@ -314,7 +306,6 @@ class RetellSyncService
             }
         }
 
-        Log::info("✅ Resincronização concluída: {$stats['success']} sucesso, {$stats['errors']} erros");
 
         return $stats;
     }
@@ -330,7 +321,6 @@ class RetellSyncService
             ->where('needs_resync', false)
             ->delete();
 
-        Log::info("🗑️ {$deletados} registros antigos removidos (anteriores a {$dataLimite->format('Y-m-d')})");
 
         return $deletados;
     }

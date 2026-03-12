@@ -49,12 +49,10 @@ class ProcessarContatoJob extends Job
             app()->instance('empresa_id', $queueJob->empresa_id);
         }
 
-        Log::info("✅ [JOB-FOUND] QueueJob encontrado: {$this->queueJobId} | Tentativa: {$queueJob->tentativas}");
 
         // Verifica se o mailing ainda está ativo
         $mailing = $queueJob->mailing;
         if ($mailing->isPausado() || $mailing->status === 'cancelado') {
-            Log::warning("⏸️  [JOB-MAILING-PAUSED] Mailing {$mailing->id} está {$mailing->status}, job {$this->queueJobId} será adiado 5 minutos");
             $queueJob->proxima_tentativa = \Carbon\Carbon::now()->addMinutes(5);
             $queueJob->save();
             return;
@@ -63,16 +61,12 @@ class ProcessarContatoJob extends Job
         $contato = $queueJob->contato;
         $script  = $mailing->script;
 
-        Log::info("📋 [JOB-CONTEXT] Mailing: {$mailing->nome} | Contato: {$contato->nome} | Tel: {$contato->telefone} | Valor: R$ {$contato->valor_debito}");
 
         try {
 
             // Marca como processando
             $queueJob->marcarComoProcessando(gethostname());
-            Log::info("⚙️  [JOB-PROCESSING] Marcado como processando no host: " . gethostname());
 
-            Log::info("Dados do contato {$contato->toJson()}");
-            Log::info("🔄 [JOB-CALLING] Iniciando ligação para contato {$contato->id} - {$contato->nome} ({$contato->telefone})");
             // Verifica se pode fazer ligação neste horário
             // TEMPORÁRIO: Desabilitado para testes
             // if (!$script->podeDiscarNaHora()) {
@@ -85,7 +79,6 @@ class ProcessarContatoJob extends Job
 
             DB::beginTransaction();
 
-            Log::info("🔐 [JOB-SECURITY] Dados do contato {$contato}");
 
             // Preparar variáveis dinâmicas para o agente (novo formato)
             $nomeParts    = explode(' ', $contato->nome);
@@ -137,10 +130,8 @@ class ProcessarContatoJob extends Job
                 'tentativas_contato'      => (string) ($contato->tentativas_contato ?? 1),
             ];
 
-            Log::info("📊 [DYNAMIC-VARIABLES] Variáveis dinâmicas preparadas: " . json_encode($dynamicVariables));
 
             $start = microtime(true);
-            Log::info("📞 [JOB-RETELL-START] Chamando Retell API v2/create-phone-call");
 
             // Configurações da API (por empresa, com fallback para env global)
             $creds      = IntegracaoService::getCredentials($mailing->empresa_id);
@@ -148,9 +139,6 @@ class ProcessarContatoJob extends Job
             $agentId    = $creds['retell_agent_id'];
             $fromNumber = $creds['from_number'];
 
-            Log::info('🔐 [RETELL-CONFIG] API Key: ' . (empty($apiKey) ? 'VAZIA!' : substr($apiKey, 0, 10) . '...'));
-            Log::info('🤖 [RETELL-CONFIG] Agent ID: ' . (empty($agentId) ? 'VAZIO!' : $agentId));
-            Log::info('📞 [RETELL-CONFIG] From Number: ' . (empty($fromNumber) ? 'VAZIO!' : $fromNumber));
 
             // Construir request no novo formato da API
             // Não envia override_agent_version para sempre usar a versão mais recente publicada
@@ -171,15 +159,6 @@ class ProcessarContatoJob extends Job
                 ],
             ];
 
-            Log::info("📤 [RETELL-REQUEST] Body: " . json_encode($requestBody));
-
-            // Log curl equivalente
-            $curlCommand = $this->generateCurlCommand(
-                'https://api.retellai.com/v2/create-phone-call',
-                $requestBody,
-                ['Authorization' => 'Bearer ' . $apiKey, 'Content-Type' => 'application/json']
-            );
-            Log::info("🔗 [RETELL-CURL] " . $curlCommand);
 
             $client         = new Client();
             $retellResponse = $client->post('https://api.retellai.com/v2/create-phone-call', [
@@ -193,8 +172,6 @@ class ProcessarContatoJob extends Job
             $duration   = microtime(true) - $start;
             $retellBody = json_decode($retellResponse->getBody()->getContents(), true);
 
-            Log::info("✅ [RETELL-RESPONSE] Status: {$retellResponse->getStatusCode()} | Duração: " . round($duration * 1000) . "ms");
-            Log::info("✅ [RETELL-BODY] Response: " . json_encode($retellBody));
 
             // Extrair call_id do resultado
             $callId = $retellBody['call_id'] ?? null;
@@ -202,12 +179,10 @@ class ProcessarContatoJob extends Job
                 throw new \Exception("Retell API não retornou call_id: " . json_encode($retellBody));
             }
 
-            Log::info("📱 [JOB-CALL-ID] Call ID extraído: {$callId}");
 
             // Atualiza contato
             $contato->status = 'em_ligacao';
             $contato->save();
-            Log::info("✅ [JOB-CONTACT-UPDATED] Contato {$contato->id} atualizado para status 'em_ligacao'");
 
             // Cria registro de ligação
             $ligacao = Ligacao::create([
@@ -222,7 +197,6 @@ class ProcessarContatoJob extends Job
                     'retell_response'     => $retellBody,
                 ],
             ]);
-            Log::info("💾 [JOB-LIGACAO-CREATED] Ligação {$ligacao->id} criada com call_id: {$callId}");
 
             // Marca job como aguardando callback da Retell
             $queueJob->status    = 'awaiting_callback';
@@ -236,14 +210,11 @@ class ProcessarContatoJob extends Job
             $queueJob->tempo_processamento = (int) ($duration * 1000);
             $queueJob->ultima_tentativa    = Carbon::now();
             $queueJob->save();
-            Log::info("⏳ [JOB-AWAITING-CALLBACK] QueueJob {$this->queueJobId} em aguardo de callback com call_id: {$callId}");
 
             // Atualiza estatísticas do mailing
             $mailing->atualizarEstatisticas();
-            Log::info("📊 [JOB-STATS-UPDATED] Estatísticas do mailing {$mailing->id} atualizadas");
 
             DB::commit();
-            Log::info("✅ [JOB-SUCCESS] Ligação iniciada com sucesso! Call ID: {$callId}");
 
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             DB::rollBack();
@@ -276,11 +247,9 @@ class ProcessarContatoJob extends Job
         // Incrementa tentativas
         $queueJob->tentativas    += 1;
         $queueJob->erro_mensagem = substr($exception->getMessage(), 0, 500);
-        Log::info("⚠️  [JOB-ATTEMPT] Tentativa #{$queueJob->tentativas} | Erro: {$queueJob->erro_mensagem}");
 
         // Determina max tentativas (usa do mailing ou do script)
         $maxTentativas  = $mailing->max_tentativas ?? $script->tentativas_max ?? 3;
-        Log::info("📊 [JOB-MAX-ATTEMPTS] Max tentativas configuradas: {$maxTentativas}");
 
         if ($queueJob->tentativas >= $maxTentativas) {
             // Falhou permanentemente
@@ -299,16 +268,12 @@ class ProcessarContatoJob extends Job
             $queueJob->proxima_tentativa = Carbon::now()->addSeconds($delay);
             $queueJob->status            = 'pending';
 
-            Log::warning("🔄 [JOB-RETRY-SCHEDULED] Job {$this->queueJobId} será retentado em " . round($delay / 60) . " minutos (tentativa {$queueJob->tentativas}/{$maxTentativas})");
-            Log::debug("⏱️  [JOB-BACKOFF] Intervalo base: {$intervalo}s | Multiplicador: 2^" . ($queueJob->tentativas - 1) . " | Delay final: {$delay}s");
         }
 
         $queueJob->save();
-        Log::info("💾 [JOB-STATE-SAVED] QueueJob {$this->queueJobId} estado salvo no banco de dados");
 
         // Atualiza estatísticas do mailing
         $mailing->atualizarEstatisticas();
-        Log::info("📊 [JOB-MAILING-STATS] Estatísticas do mailing {$mailing->id} atualizadas");
     }
 
     /**
@@ -329,25 +294,4 @@ class ProcessarContatoJob extends Job
         }
     }
 
-    /**
-     * Gera um comando curl equivalente à requisição.
-     *
-     * @param  string  $url
-     * @param  array   $body
-     * @param  array   $headers
-     * @return string
-     */
-    private function generateCurlCommand($url, $body, $headers)
-    {
-        $curl = "curl -X POST '{$url}'";
-
-        foreach ($headers as $key => $value) {
-            $curl .= " \\\n  -H '{$key}: {$value}'";
-        }
-
-        $bodyJson = json_encode($body);
-        $curl     .= " \\\n  -d '" . str_replace("'", "'\\''", $bodyJson) . "'";
-
-        return $curl;
-    }
 }

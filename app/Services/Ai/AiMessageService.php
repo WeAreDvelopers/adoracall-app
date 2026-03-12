@@ -75,7 +75,6 @@ PROMPT;
 
         $cached = Cache::get($cacheKey);
         if ($cached) {
-            Log::info("[AI] Cache hit | empresa={$empresa->id} step={$step}");
             return $cached;
         }
 
@@ -83,7 +82,6 @@ PROMPT;
             $provider = $this->resolveProvider($empresa);
 
             if (!$provider) {
-                Log::warning("[AI] Provider não configurado para empresa {$empresa->id} - usando fallback");
                 return $defaultMessage;
             }
 
@@ -105,14 +103,12 @@ PROMPT;
             $text = $this->sanitize($text);
 
             if (empty($text)) {
-                Log::warning("[AI] Resposta vazia após sanitização | empresa={$empresa->id} step={$step}");
                 return $defaultMessage;
             }
 
             // Cachear resposta
             Cache::put($cacheKey, $text, Carbon::now()->addMinutes(self::CACHE_TTL_MINUTES));
 
-            Log::info("[AI] Mensagem gerada e cacheada | empresa={$empresa->id} step={$step} length=" . strlen($text));
 
             return $text;
 
@@ -155,7 +151,6 @@ PROMPT;
             try {
                 return \Illuminate\Support\Facades\Crypt::decryptString($integracao->openai_api_key);
             } catch (\Exception $e) {
-                Log::warning("[AI] Erro ao descriptografar openai_api_key empresa={$empresa->id}");
             }
         }
 
