@@ -25,7 +25,7 @@ class NegociacaoController extends Controller
     public function buscar(Request $request): JsonResponse
     {
         $this->validate($request, [
-            'doc' => 'required|numeric',
+            'doc' => 'required',
         ]);
 
         $customerId = $request->input('doc');
