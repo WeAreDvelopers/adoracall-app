@@ -49,6 +49,9 @@ class RetellNegotiationService
             'total_value'   => $debit['totalValue'] ?? 0,
             'valid_date'    => $debit['validDate'] ?? null,
 
+            'total_options'        => count($options),
+            'total_cash'           => count($aVista),
+            'total_installments'   => count($parceladas),
             'best_option'          => $this->selecionarMelhorOpcao($options),
             'cash_options'         => array_map(fn($opt) => $this->formatarOpcao($opt), array_values($aVista)),
             'installment_options'  => array_map(fn($opt) => $this->formatarOpcao($opt), array_values($parceladas)),
