@@ -25,10 +25,10 @@ class NegociacaoController extends Controller
     public function buscar(Request $request): JsonResponse
     {
         $this->validate($request, [
-            'customer_id' => 'required|numeric',
+            'doc' => 'required|numeric',
         ]);
 
-        $customerId = $request->input('customer_id');
+        $customerId = $request->input('doc');
 
         try {
             // Buscar contato no sistema para obter o CPF
