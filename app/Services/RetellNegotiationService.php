@@ -35,6 +35,13 @@ class RetellNegotiationService
         $debit = $proposal['debits'][0];
         $options = $debit['paymentOptions'] ?? [];
 
+        // Separar à vista e parceladas
+        $aVista = array_filter($options, fn($opt) => ($opt['installmentNumber'] ?? 0) <= 1);
+        $parceladas = array_filter($options, fn($opt) => ($opt['installmentNumber'] ?? 0) > 1);
+
+        // Ordenar parceladas por número de parcelas (menor → maior)
+        usort($parceladas, fn($a, $b) => ($a['installmentNumber'] ?? 0) <=> ($b['installmentNumber'] ?? 0));
+
         return [
             'customer_name' => $proposal['name'] ?? '',
             'debit_id'      => $debit['id'],
@@ -42,9 +49,9 @@ class RetellNegotiationService
             'total_value'   => $debit['totalValue'] ?? 0,
             'valid_date'    => $debit['validDate'] ?? null,
 
-            'best_option'        => $this->selecionarMelhorOpcao($options),
-            'installment_option' => $this->selecionarOpcaoParcelada($options),
-            'alternative_option' => $this->selecionarOpcaoAlternativa($options),
+            'best_option'          => $this->selecionarMelhorOpcao($options),
+            'cash_options'         => array_map(fn($opt) => $this->formatarOpcao($opt), array_values($aVista)),
+            'installment_options'  => array_map(fn($opt) => $this->formatarOpcao($opt), array_values($parceladas)),
         ];
     }
 
@@ -79,48 +86,15 @@ class RetellNegotiationService
         return $melhor ? $this->formatarMelhorOpcao($melhor) : null;
     }
 
-    /**
-     * installment_option: parceladas (installmentNumber > 0), menor totalValue.
-     */
-    private function selecionarOpcaoParcelada(array $options): ?array
+    private function formatarOpcao(array $opt): array
     {
-        $parceladas = array_filter($options, fn($opt) => ($opt['installmentNumber'] ?? 0) > 0);
-
-        if (empty($parceladas)) {
-            return null;
-        }
-
-        usort($parceladas, fn($a, $b) => ($a['totalValue'] ?? 0) <=> ($b['totalValue'] ?? 0));
-        $escolhida = $parceladas[0];
-
         return [
-            'id'                => $escolhida['id'],
-            'firstValue'        => $escolhida['firstValue'] ?? $escolhida['installmentValue'] ?? 0,
-            'installmentNumber' => $escolhida['installmentNumber'],
-            'installmentValue'  => $escolhida['installmentValue'] ?? 0,
-            'totalValue'        => $escolhida['totalValue'] ?? 0,
-        ];
-    }
-
-    /**
-     * alternative_option: parceladas (installmentNumber > 0), menor installmentValue.
-     */
-    private function selecionarOpcaoAlternativa(array $options): ?array
-    {
-        $parceladas = array_filter($options, fn($opt) => ($opt['installmentNumber'] ?? 0) > 0);
-
-        if (empty($parceladas)) {
-            return null;
-        }
-
-        usort($parceladas, fn($a, $b) => ($a['installmentValue'] ?? 0) <=> ($b['installmentValue'] ?? 0));
-        $escolhida = $parceladas[0];
-
-        return [
-            'id'                => $escolhida['id'],
-            'firstValue'        => $escolhida['firstValue'] ?? $escolhida['installmentValue'] ?? 0,
-            'installmentNumber' => $escolhida['installmentNumber'],
-            'installmentValue'  => $escolhida['installmentValue'] ?? 0,
+            'id'                => $opt['id'],
+            'totalValue'        => $opt['totalValue'] ?? 0,
+            'percDiscount'      => $opt['percDiscount'] ?? 0,
+            'firstValue'        => $opt['firstValue'] ?? $opt['installmentValue'] ?? 0,
+            'installmentNumber' => $opt['installmentNumber'] ?? 0,
+            'installmentValue'  => $opt['installmentValue'] ?? 0,
         ];
     }
 
