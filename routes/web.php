@@ -396,6 +396,11 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         $router->post('/webhook', 'RetellFunctionController@webhookLigacao');
     });
 
+    // ========== NEGOCIAÇÃO - API para Retell (consulta API Adora) ==========
+    $router->group(['prefix' => 'negociacao'], function () use ($router) {
+        $router->post('/buscar', 'NegociacaoController@buscar');
+    });
+
     // ========== RESULTADOS DE IMPORTAÇÃO ==========
     $router->group(['prefix' => 'resultados', 'middleware' => 'auth.jwt'], function () use ($router) {
         $router->get('/', ['as' => 'resultados.index', 'uses' => 'ResultadosImportacaoController@index']);
