@@ -47,7 +47,15 @@ $router->get('/dashboard/cobranca', ['as' => 'dashboard.cobranca', 'uses' => 'Vi
 $router->get('/dashboard/vendas', ['as' => 'dashboard.vendas', 'uses' => 'ViewController@dashboardVendas']);
 $router->get('/dashboard/acordos', ['as' => 'dashboard.acordos', 'uses' => 'DashboardAcordosController@index']);
 
-// Campanha
+// Campanhas (novas rotas canônicas)
+$router->get('/campanhas', ['as' => 'campanhas.index', 'uses' => 'ViewController@campanhasIndex']);
+$router->get('/campanhas/{id}', ['as' => 'campanhas.show', 'uses' => 'ViewController@visualizarCampanha']);
+
+// Operação
+$router->get('/operacao/painel', ['as' => 'operacao.painel', 'uses' => 'ViewController@gerenciarFila']);
+$router->get('/operacao/chamadas', ['as' => 'operacao.chamadas', 'uses' => 'ViewController@statusLigacoes']);
+
+// Campanha (rotas legadas - mantidas para backward compatibility)
 $router->group(['prefix' => 'campanha'], function () use ($router) {
     $router->get('/criar', ['as' => 'campanha.criar', 'uses' => 'ViewController@criarCampanha']);
     $router->get('/importacao', ['as' => 'campanha.importacao', 'uses' => 'ViewController@importacao']);

@@ -100,6 +100,14 @@ class ViewController extends Controller
     }
 
     /**
+     * Lista de todas as campanhas
+     */
+    public function campanhasIndex()
+    {
+        return view('campanha.campanhas-index');
+    }
+
+    /**
      * Visualizar detalhes da campanha com seus contatos
      */
     public function visualizarCampanha($id)

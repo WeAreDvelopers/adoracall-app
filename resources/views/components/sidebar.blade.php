@@ -27,44 +27,34 @@
             </div>
 
             <div class="sidebar-section-content overflow-hidden transition-all duration-300" data-section="campanhas" style="max-height: 1000px; opacity: 1;">
-                <!-- Gerenciamento -->
-                <div class="px-3 pt-3 pb-1">
-                    <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-300">Gerenciamento</span>
-                </div>
+                <a href="/campanhas" class="sidebar-item sidebar-submenu-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('campanhas') || $Request->is('campanha/status-importacoes') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <i class="fas fa-bullhorn w-4 text-center text-[13px]"></i>
+                    <span>Todas as Campanhas</span>
+                </a>
 
                 <a href="{{ route('campanha.criar') }}" class="sidebar-item sidebar-submenu-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('campanha/criar') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                     <i class="fas fa-plus-circle w-4 text-center text-[13px]"></i>
                     <span>Nova Campanha</span>
                 </a>
+            </div>
+        </div>
 
-                <a href="{{ route('campanha.importacao') }}" class="sidebar-item sidebar-submenu-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('campanha/importacao') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                    <i class="fas fa-upload w-4 text-center text-[13px]"></i>
-                    <span>Importar Contatos</span>
+        <!-- Operacao Section -->
+        <div class="sidebar-section pt-3" data-section="operacao">
+            <div class="sidebar-section-header flex items-center gap-2 px-3 py-1.5 cursor-pointer rounded-md hover:bg-slate-50 transition-colors" onclick="toggleSidebarSection(this)" data-expanded="true">
+                <i class="fas fa-chevron-right sidebar-section-chevron text-[10px] text-slate-400 transition-transform duration-200"></i>
+                <span class="sidebar-section-label text-[11px] font-semibold uppercase tracking-wider text-slate-400">Operação</span>
+            </div>
+
+            <div class="sidebar-section-content overflow-hidden transition-all duration-300" data-section="operacao" style="max-height: 1000px; opacity: 1;">
+                <a href="/operacao/painel" class="sidebar-item sidebar-submenu-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('operacao/painel') || $Request->is('campanha/gerenciar-fila') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <i class="fas fa-sliders-h w-4 text-center text-[13px]"></i>
+                    <span>Painel de Controle</span>
                 </a>
 
-                <!-- Monitoramento -->
-                <div class="px-3 pt-3 pb-1">
-                    <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-300">Monitoramento</span>
-                </div>
-
-                <a href="{{ route('campanha.status-importacoes') }}" class="sidebar-item sidebar-submenu-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('campanha/status-importacoes') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                    <i class="fas fa-tasks w-4 text-center text-[13px]"></i>
-                    <span>Importa&ccedil;&otilde;es</span>
-                </a>
-
-                <a href="{{ route('campanha.status-fila') }}" class="sidebar-item sidebar-submenu-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('campanha/status-fila') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                    <i class="fas fa-layer-group w-4 text-center text-[13px]"></i>
-                    <span>Fila de Chamadas</span>
-                </a>
-
-                <a href="{{ route('campanha.status-ligacoes') }}" class="sidebar-item sidebar-submenu-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('campanha/status-ligacoes') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                    <i class="fas fa-phone-alt w-4 text-center text-[13px]"></i>
-                    <span>Hist&oacute;rico de Chamadas</span>
-                </a>
-
-                <a href="{{ route('contatos.index') }}" class="sidebar-item sidebar-submenu-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('contatos*') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                    <i class="fas fa-address-book w-4 text-center text-[13px]"></i>
-                    <span>Contatos Importados</span>
+                <a href="/operacao/chamadas" class="sidebar-item sidebar-submenu-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('operacao/chamadas') || $Request->is('campanha/status-ligacoes') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <i class="fas fa-headset w-4 text-center text-[13px]"></i>
+                    <span>Chamadas ao Vivo</span>
                 </a>
             </div>
         </div>
@@ -84,7 +74,7 @@
 
                 <a href="/dashboard/acordos" class="sidebar-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('dashboard/acordos') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                     <i class="fas fa-chart-pie w-4 text-center text-[13px]"></i>
-                    <span>Acordos &amp; Convers&atilde;o</span>
+                    <span>Acordos &amp; Conversão</span>
                 </a>
             </div>
         </div>
@@ -101,7 +91,7 @@
         <div class="sidebar-section pt-3" data-section="admin" id="sidebarAdminSection" style="display: none;">
             <div class="sidebar-section-header flex items-center gap-2 px-3 py-1.5 cursor-pointer rounded-md hover:bg-slate-50 transition-colors" onclick="toggleSidebarSection(this)" data-expanded="true">
                 <i class="fas fa-chevron-right sidebar-section-chevron text-[10px] text-slate-400 transition-transform duration-200"></i>
-                <span class="sidebar-section-label text-[11px] font-semibold uppercase tracking-wider text-red-400">Administra&ccedil;&atilde;o</span>
+                <span class="sidebar-section-label text-[11px] font-semibold uppercase tracking-wider text-red-400">Administração</span>
             </div>
 
             <div class="sidebar-section-content overflow-hidden transition-all duration-300" data-section="admin" style="max-height: 1000px; opacity: 1;">
@@ -112,7 +102,7 @@
 
                 <a href="/admin/usuarios" class="sidebar-item flex items-center gap-3 px-3 pl-8 py-2 rounded-lg text-sm transition-colors {{ $Request->is('admin/usuarios*') ? 'active bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                     <i class="fas fa-users-cog w-4 text-center text-[13px]"></i>
-                    <span>Usu&aacute;rios</span>
+                    <span>Usuários</span>
                 </a>
             </div>
         </div>
