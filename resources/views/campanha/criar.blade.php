@@ -133,15 +133,6 @@
 
     @push('scripts')
         <script>
-            // Fallback: tipos padrão caso a API não retorne nenhum
-            const tiposPadrao = [
-                { slug: 'atraso_leve', nome: 'Atraso Leve', subtitulo: '1 a 15 dias', descricao: 'Cliente ainda "quente", maior chance de sucesso.', cor: '#22c55e', icone: 'A', max_tentativas: 6, dias_estimados: 2, velocidade_contatos_hora: 50, intervalo_retry: 240, prioridade: 'alta', faixa_velocidade: '40-60', insight: 'Taxa de contato alta. Vale insistir mais com intervalos menores entre tentativas.' },
-                { slug: 'atraso_medio', nome: 'Atraso M\u00e9dio', subtitulo: '16 a 60 dias', descricao: 'Objetivo de negocia\u00e7\u00e3o e acordo.', cor: '#f97316', icone: 'B', max_tentativas: 6, dias_estimados: 3, velocidade_contatos_hora: 35, intervalo_retry: 360, prioridade: 'normal', faixa_velocidade: '30-40', insight: 'Menos insist\u00eancia di\u00e1ria (2-3 tentativas/dia), mas cobertura ampla de hor\u00e1rios.' },
-                { slug: 'atraso_alto', nome: 'Atraso Alto', subtitulo: '61 a 180 dias', descricao: '\u00daltima tentativa autom\u00e1tica. Abordagem conservadora.', cor: '#ef4444', icone: 'C', max_tentativas: 5, dias_estimados: 3, velocidade_contatos_hora: 25, intervalo_retry: 720, prioridade: 'normal', faixa_velocidade: '20-30', insight: 'Contato mais dif\u00edcil. Evitar insist\u00eancia excessiva para n\u00e3o gerar bloqueios.' },
-                { slug: 'inadimplencia_critica', nome: 'Inadimpl\u00eancia Cr\u00edtica', subtitulo: 'Pr\u00e9-jur\u00eddico', descricao: 'Comunica\u00e7\u00e3o formal e conservadora.', cor: '#b91c1c', icone: 'D', max_tentativas: 3, dias_estimados: 3, velocidade_contatos_hora: 20, intervalo_retry: 1440, prioridade: 'baixa', faixa_velocidade: '20', insight: 'Abordagem altamente conservadora. Apenas 1 tentativa por dia. Risco legal elevado.' },
-                { slug: 'leads_novos', nome: 'Leads / Confirma\u00e7\u00e3o', subtitulo: 'Novos contatos', descricao: 'Valida\u00e7\u00e3o de contato. Taxa alta de resposta.', cor: '#3b82f6', icone: 'E', max_tentativas: 4, dias_estimados: 2, velocidade_contatos_hora: 55, intervalo_retry: 360, prioridade: 'alta', faixa_velocidade: '50-60', insight: 'Novo contato = alta receptividade. Focar em valida\u00e7\u00e3o r\u00e1pida e confirma\u00e7\u00e3o.' },
-            ];
-
             let tiposDisponiveis = [];
             let tipoSelecionado = null;
 
@@ -153,9 +144,9 @@
                 try {
                     const res = await fetchWithAuth(`${API_BASE_URL}/tipos-publico?ativo=1`);
                     const data = await res.json();
-                    tiposDisponiveis = (data.tipos && data.tipos.length > 0) ? data.tipos : tiposPadrao;
+                    tiposDisponiveis = (data.tipos && data.tipos.length > 0) ? data.tipos : [];
                 } catch (e) {
-                    tiposDisponiveis = tiposPadrao;
+                    tiposDisponiveis = [];
                 }
 
                 renderizarTiposPublico();
@@ -163,6 +154,14 @@
 
             function renderizarTiposPublico() {
                 const grid = document.getElementById('tiposPublicoGrid');
+
+                if (tiposDisponiveis.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 text-sm">
+                        <i class="fas fa-info-circle text-2xl mb-2 block"></i>
+                        Nenhum tipo de público cadastrado. <a href="/tipos-publico" class="text-brand-600 hover:underline">Criar tipos de público</a>
+                    </div>`;
+                    return;
+                }
 
                 grid.innerHTML = tiposDisponiveis.map(tipo => {
                     const slug = tipo.slug;

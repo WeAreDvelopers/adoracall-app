@@ -9,11 +9,9 @@ let contatosLoaded = false;
 let chamadasLoaded = false;
 let importarLoaded = false;
 
-// Contatos state
-let contatosList = [];
-let contatosFiltrados = [];
-let contatosPagina = 1;
-const contatosPerPage = 20;
+// Contatos state - server-side pagination
+let contatosCurrentPage = 1;
+let contatosTotalPages = 1;
 
 // Chamadas state
 let chamadasPage = 1;
@@ -47,7 +45,7 @@ function switchTab(tab) {
     });
 
     // Lazy load
-    if (tab === 'contatos' && !contatosLoaded) { carregarContatos(); contatosLoaded = true; }
+    if (tab === 'contatos' && !contatosLoaded) { carregarContatos(1); contatosLoaded = true; }
     if (tab === 'chamadas' && !chamadasLoaded) { carregarChamadas(); chamadasLoaded = true; }
     if (tab === 'importar' && !importarLoaded) { initImportForm(); importarLoaded = true; }
 }
@@ -110,7 +108,17 @@ function renderizarResumo() {
     document.getElementById('statCompletados').textContent = stats.completados || 0;
     document.getElementById('statFalhados').textContent = stats.falhados || 0;
 
-    // Detalhes
+    // Detalhes com agendamento
+    const agendamentoHtml = (d.data_inicio_agendado || d.data_fim_agendado) ? `
+        <div>
+            <p class="text-slate-400 text-xs uppercase font-medium mb-1">Inicio Agendado</p>
+            <p class="font-medium text-slate-900">${d.data_inicio_agendado ? new Date(d.data_inicio_agendado).toLocaleString('pt-BR') : 'N/A'}</p>
+        </div>
+        <div>
+            <p class="text-slate-400 text-xs uppercase font-medium mb-1">Fim Agendado</p>
+            <p class="font-medium text-slate-900">${d.data_fim_agendado ? new Date(d.data_fim_agendado).toLocaleString('pt-BR') : 'N/A'}</p>
+        </div>` : '';
+
     document.getElementById('detailsGrid').innerHTML = `
         <div>
             <p class="text-slate-400 text-xs uppercase font-medium mb-1">Tipo Publico</p>
@@ -128,26 +136,43 @@ function renderizarResumo() {
             <p class="text-slate-400 text-xs uppercase font-medium mb-1">Intervalo Retry</p>
             <p class="font-medium text-slate-900">${d.intervalo_retry || 'N/A'} min</p>
         </div>
+        ${agendamentoHtml}
     `;
 
     // Action buttons
-    renderActionButtons(d.status);
+    renderActionButtons(d.status, stats.falhados || 0);
+
+    // Chart
+    renderGrafico(stats);
 }
 
-function renderActionButtons(status) {
+function renderActionButtons(status, falhados) {
     const container = document.getElementById('headerActions');
     let html = '';
 
-    if (status === 'pronto' || status === 'pausado') {
-        const label = status === 'pausado' ? 'Retomar' : 'Ativar';
-        const acao = status === 'pausado' ? 'retomar' : 'ativar';
-        html += `<button onclick="executarAcao('${acao}')" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors">
-            <i class="fas fa-play"></i> ${label}
+    if (status === 'rascunho') {
+        html += `<button onclick="executarAcao('ativar')" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors">
+            <i class="fas fa-rocket"></i> Iniciar Campanha
+        </button>`;
+    }
+    if (status === 'pronto') {
+        html += `<button onclick="executarAcao('ativar')" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors">
+            <i class="fas fa-play"></i> Ativar
+        </button>`;
+    }
+    if (status === 'pausado') {
+        html += `<button onclick="executarAcao('retomar')" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors">
+            <i class="fas fa-play"></i> Retomar
         </button>`;
     }
     if (status === 'ativo') {
         html += `<button onclick="executarAcao('pausar')" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors">
             <i class="fas fa-pause"></i> Pausar
+        </button>`;
+    }
+    if (falhados > 0 && status !== 'cancelado' && status !== 'concluido') {
+        html += `<button onclick="recolocarFalhasNaFila()" class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors">
+            <i class="fas fa-redo"></i> Recolocar Falhas (${falhados})
         </button>`;
     }
     if (status !== 'cancelado' && status !== 'concluido') {
@@ -157,6 +182,65 @@ function renderActionButtons(status) {
     }
 
     container.innerHTML = html;
+}
+
+async function recolocarFalhasNaFila() {
+    if (!confirm('Recolocar todos os jobs falhados na fila?')) return;
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/filas_campanha/${campanhaId}/retry-falhas`, { method: 'POST' });
+        const data = await response.json();
+        if (response.ok) {
+            showToast(`${data.total} jobs recolocados na fila!`, 'success');
+            setTimeout(() => carregarCampanha(), 1000);
+        } else {
+            showToast(data.message || data.error || 'Erro ao recolocar falhas', 'error');
+        }
+    } catch (error) {
+        showToast('Erro: ' + error.message, 'error');
+    }
+}
+
+// ==================== GRÁFICO ====================
+
+let statsChart = null;
+
+function renderGrafico(stats) {
+    const canvas = document.getElementById('statsChart');
+    if (!canvas) return;
+
+    const pendentes = stats.pendentes || 0;
+    const processando = stats.processando || 0;
+    const completados = stats.completados || 0;
+    const falhados = stats.falhados || 0;
+
+    const container = document.getElementById('chartContainer');
+    if (pendentes + processando + completados + falhados === 0) {
+        if (container) container.classList.add('hidden');
+        return;
+    }
+    if (container) container.classList.remove('hidden');
+
+    if (statsChart) statsChart.destroy();
+
+    statsChart = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pendentes', 'Processando', 'Completados', 'Falhados'],
+            datasets: [{
+                data: [pendentes, processando, completados, falhados],
+                backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'],
+                borderWidth: 0,
+                hoverOffset: 4,
+            }]
+        },
+        options: {
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 16, font: { size: 12 } } },
+                tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed}` } }
+            }
+        }
+    });
 }
 
 async function executarAcao(acao) {
@@ -179,30 +263,46 @@ async function executarAcao(acao) {
 
 // ==================== TAB CONTATOS ====================
 
-async function carregarContatos() {
+async function carregarContatos(page) {
+    page = page || contatosCurrentPage;
+    contatosCurrentPage = page;
+
+    const search = (document.getElementById('contatoSearch').value || '').trim();
+    const status = document.getElementById('contatoStatus').value;
+
+    let url = `${API_BASE_URL}/filas_campanha/${campanhaId}/contatos?per_page=20&page=${page}`;
+    if (search) url += `&buscar=${encodeURIComponent(search)}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+
+    // Show loading
+    document.getElementById('contatosBody').innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400"><i class="fas fa-spinner fa-spin text-lg"></i><p class="mt-2 text-sm">Carregando contatos...</p></td></tr>`;
+
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/filas_campanha/${campanhaId}/contatos`);
+        const response = await fetchWithAuth(url);
         if (!response.ok) throw new Error('Erro ao carregar contatos');
         const data = await response.json();
-        contatosList = Array.isArray(data) ? data : (data.data || []);
-        contatosFiltrados = [...contatosList];
-        contatosPagina = 1;
-        renderizarContatos();
+
+        const contatos = data.data || [];
+        contatosTotalPages = data.last_page || 1;
+        const total = data.total || 0;
+        const from = data.from || 0;
+        const to = data.to || contatos.length;
+
+        renderizarContatos(contatos, total, from, to);
     } catch (error) {
         console.error('Erro:', error);
         document.getElementById('contatosBody').innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-red-400"><i class="fas fa-exclamation-triangle"></i> Erro ao carregar contatos</td></tr>`;
     }
 }
 
-function renderizarContatos() {
-    const inicio = (contatosPagina - 1) * contatosPerPage;
-    const fim = inicio + contatosPerPage;
-    const pagina = contatosFiltrados.slice(inicio, fim);
+function renderizarContatos(contatos, total, from, to) {
     const tbody = document.getElementById('contatosBody');
 
-    if (pagina.length === 0) {
+    if (contatos.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400"><i class="fas fa-inbox text-xl"></i><p class="mt-2 text-sm">Nenhum contato encontrado</p></td></tr>`;
         document.getElementById('contatosPagInfo').textContent = '0 contatos';
+        document.getElementById('contatosPrev').disabled = true;
+        document.getElementById('contatosNext').disabled = true;
         return;
     }
 
@@ -211,63 +311,107 @@ function renderizarContatos() {
             pendente: 'bg-amber-100 text-amber-700',
             processando: 'bg-blue-100 text-blue-700',
             completado: 'bg-emerald-100 text-emerald-700',
-            falha: 'bg-red-100 text-red-700'
+            falha: 'bg-red-100 text-red-700',
+            importado: 'bg-slate-100 text-slate-700',
+            finalizado: 'bg-emerald-100 text-emerald-700',
         };
         return map[status] || 'bg-slate-100 text-slate-700';
     };
 
-    tbody.innerHTML = pagina.map(c => `
+    tbody.innerHTML = contatos.map(c => `
         <tr class="hover:bg-slate-50 transition-colors">
-            <td class="px-6 py-3 text-sm text-slate-900 font-medium">${escapeHtml(c.nome || 'N/A')}</td>
+            <td class="px-6 py-3 text-sm text-slate-900 font-medium">${escapeHtml((c.nome || '') + (c.sobrenome ? ' ' + c.sobrenome : ''))}</td>
             <td class="px-6 py-3 text-sm text-slate-600 font-mono">${c.telefone || 'N/A'}</td>
             <td class="px-6 py-3 text-sm text-slate-600">${maskCPF(c.cpf)}</td>
             <td class="px-6 py-3 text-sm text-slate-600">R$ ${parseFloat(c.valor_debito || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
             <td class="px-6 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge(c.status)}">${capitalize(c.status || 'pendente')}</span></td>
             <td class="px-6 py-3 text-sm text-slate-600">${c.tentativas || 0}</td>
-            <td class="px-6 py-3 text-sm text-slate-500">${c.ultima_ligacao ? new Date(c.ultima_ligacao).toLocaleString('pt-BR') : '-'}</td>
+            <td class="px-6 py-3 text-sm text-slate-500">${c.ultima_ligacao ? new Date(c.ultima_ligacao).toLocaleString('pt-BR') : (c.ultima_tentativa ? new Date(c.ultima_tentativa).toLocaleString('pt-BR') : '-')}</td>
             <td class="px-6 py-3"><a href="/contatos/${c.id}" class="text-brand-600 hover:text-brand-700 text-sm font-medium">Detalhes</a></td>
         </tr>
     `).join('');
 
-    const total = contatosFiltrados.length;
-    document.getElementById('contatosPagInfo').textContent = `${inicio + 1}-${Math.min(fim, total)} de ${total} contatos`;
-    document.getElementById('contatosPrev').disabled = contatosPagina <= 1;
-    document.getElementById('contatosNext').disabled = fim >= total;
+    document.getElementById('contatosPagInfo').textContent = total > 0 ? `${from}-${to} de ${total} contatos` : '0 contatos';
+    document.getElementById('contatosPrev').disabled = contatosCurrentPage <= 1;
+    document.getElementById('contatosNext').disabled = contatosCurrentPage >= contatosTotalPages;
 }
 
 function filtrarContatos() {
-    const search = (document.getElementById('contatoSearch').value || '').toLowerCase();
-    const status = document.getElementById('contatoStatus').value;
-    contatosFiltrados = contatosList.filter(c => {
-        const matchStatus = !status || c.status === status;
-        const matchSearch = !search ||
-            (c.nome && c.nome.toLowerCase().includes(search)) ||
-            (c.telefone && c.telefone.includes(search)) ||
-            (c.cpf && c.cpf.includes(search));
-        return matchStatus && matchSearch;
-    });
-    contatosPagina = 1;
-    renderizarContatos();
+    contatosCurrentPage = 1;
+    carregarContatos(1);
 }
 
 function limparFiltrosContatos() {
     document.getElementById('contatoSearch').value = '';
     document.getElementById('contatoStatus').value = '';
-    contatosFiltrados = [...contatosList];
-    contatosPagina = 1;
-    renderizarContatos();
+    contatosCurrentPage = 1;
+    carregarContatos(1);
 }
 
 function contatosPaginaFn(delta) {
-    const totalPags = Math.ceil(contatosFiltrados.length / contatosPerPage);
-    const newPage = contatosPagina + delta;
-    if (newPage >= 1 && newPage <= totalPags) {
-        contatosPagina = newPage;
-        renderizarContatos();
+    const newPage = contatosCurrentPage + delta;
+    if (newPage >= 1 && newPage <= contatosTotalPages) {
+        carregarContatos(newPage);
     }
 }
-// Alias for onclick
 window.contatosPagina = contatosPaginaFn;
+
+// ==================== MODAL ADICIONAR CONTATO ====================
+
+function abrirModalContato() {
+    document.getElementById('modalAdicionarContato').classList.remove('hidden');
+    document.getElementById('formAdicionarContato').reset();
+    document.getElementById('alertAdicionarContato').innerHTML = '';
+}
+
+function fecharModalContato() {
+    document.getElementById('modalAdicionarContato').classList.add('hidden');
+}
+
+async function salvarContato(e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('btnSalvarContato');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Salvando...';
+    document.getElementById('alertAdicionarContato').innerHTML = '';
+
+    const payload = {
+        nome: document.getElementById('contatoNome').value.trim(),
+        telefone: document.getElementById('contatoTelefone').value.trim(),
+        cpf: document.getElementById('contatoCpf').value.trim() || null,
+        valor_debito: document.getElementById('contatoValor').value || null,
+        empresa_credora: document.getElementById('contatoEmpresaCredora').value.trim() || null,
+        vencimento: document.getElementById('contatoVencimento').value || null,
+    };
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/filas_campanha/${campanhaId}/contatos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            showToast('Contato adicionado com sucesso!', 'success');
+            fecharModalContato();
+            // Recarrega lista e resumo
+            contatosLoaded = false;
+            carregarContatos(1);
+            contatosLoaded = true;
+            carregarCampanha();
+        } else {
+            const msg = data.error || data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Erro ao salvar contato');
+            document.getElementById('alertAdicionarContato').innerHTML = `<div class="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm mb-3">${msg}</div>`;
+        }
+    } catch (error) {
+        document.getElementById('alertAdicionarContato').innerHTML = `<div class="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm mb-3">Erro: ${error.message}</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plus mr-1"></i> Adicionar';
+    }
+}
 
 // ==================== TAB CHAMADAS ====================
 

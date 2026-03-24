@@ -315,6 +315,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
 
         // Contatos da fila
         $router->get('/{id}/contatos', 'MailingController@contatosDoMailing');
+        $router->post('/{id}/contatos', 'MailingController@adicionarContato');
         $router->get('/{id}/contatos/stats', 'MailingController@contatosStats');
 
         // Monitoramento de ligações

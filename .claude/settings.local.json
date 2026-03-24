@@ -16,7 +16,16 @@
       "Bash(test:*)",
       "Bash(composer dump-autoload:*)",
       "Bash(xargs:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(where plink:*)",
+      "Bash(where putty:*)",
+      "Bash(find 'D:/Google Drive Empresa/Servidor/Dvelopers/Adora/adoracall-app-laravel' -type f \\\\\\(-name *.php -o -name *.js -o -name *.json \\\\\\))",
+      "Bash(grep -r \"debit_id\\\\|debit_total_value\\\\|debit_valid_date\" 'D:/Google Drive Empresa/Servidor/Dvelopers/Adora' --include=*.php)",
+      "Bash(plink -ssh root@185.21.252.109 -pw 'Q$0caZi9C#hP' \"ls /var/www/\")",
+      "Bash(plink -ssh root@185.21.252.109 -pw 'Q$0caZi9C#hP' \"cat /var/www/adoracall-app/app/Services/RetellNegotiationService.php\")",
+      "Bash(plink -ssh root@185.21.252.109 -pw 'Q$0caZi9C#hP' \"cd /var/www/adoracall-app && git log --oneline -3\")",
+      "Bash(pscp:*)",
+      "Bash(plink -ssh root@185.21.252.109 -pw 'Q$0caZi9C#hP' \"cd /var/www/adoracall-app && git status && git branch\")"
     ],
     "additionalDirectories": [
       "D:\\Google Drive Empresa\\Servidor\\Dvelopers\\Adora\\adoracall-app-laravel\\routes",

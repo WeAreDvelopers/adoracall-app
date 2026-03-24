@@ -114,6 +114,7 @@ class ProcessarContatoJob extends Job
 
             $converter        = new URADevedorController();
             $dynamicVariables = [
+                'customer_id'             => (string) $contato->id,
                 'nome_cliente'            => trim($primeiroNome),
                 'sobrenome'               => trim($sobrenome),
                 'credora'                 => $nomeCredora,

@@ -90,6 +90,16 @@
             </div>
         </div>
 
+        <!-- Gráfico de Status -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6 hidden" id="chartContainer">
+            <h3 class="text-sm font-semibold text-slate-900 mb-4"><i class="fas fa-chart-pie text-slate-400 mr-2"></i>Distribuição da Fila</h3>
+            <div class="flex justify-center">
+                <div style="max-width: 280px; width: 100%;">
+                    <canvas id="statsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
         <!-- Detalhes da Campanha -->
         <div class="bg-white rounded-xl border border-slate-200 p-5" id="campanhaDetails">
             <h3 class="text-sm font-semibold text-slate-900 mb-3"><i class="fas fa-info-circle text-slate-400 mr-2"></i>Detalhes</h3>
@@ -124,6 +134,9 @@
                 </button>
                 <button onclick="limparFiltrosContatos()" class="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 rounded-lg text-sm transition-colors">
                     <i class="fas fa-undo"></i>
+                </button>
+                <button onclick="abrirModalContato()" class="ml-auto px-3 py-2 bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-lg text-sm transition-colors inline-flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Adicionar Contato
                 </button>
             </div>
         </div>
@@ -245,10 +258,67 @@
             </form>
         </div>
     </div>
+    <!-- ==================== MODAL: ADICIONAR CONTATO ==================== -->
+    <div id="modalAdicionarContato" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-900"><i class="fas fa-user-plus text-slate-400 mr-2"></i>Adicionar Contato</h2>
+                <button onclick="fecharModalContato()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors text-xl">&times;</button>
+            </div>
+            <form id="formAdicionarContato" onsubmit="salvarContato(event)" class="p-6 space-y-4">
+                <div id="alertAdicionarContato"></div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Nome <span class="text-red-500">*</span></label>
+                        <input type="text" id="contatoNome" required placeholder="Nome completo"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Telefone <span class="text-red-500">*</span></label>
+                        <input type="text" id="contatoTelefone" required placeholder="(11) 99999-9999"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">CPF</label>
+                        <input type="text" id="contatoCpf" placeholder="000.000.000-00"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Valor Débito</label>
+                        <input type="number" id="contatoValor" placeholder="0.00" min="0" step="0.01"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Empresa Credora</label>
+                        <input type="text" id="contatoEmpresaCredora" placeholder="Nome da empresa"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Vencimento</label>
+                        <input type="date" id="contatoVencimento"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="fecharModalContato()"
+                        class="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-lg text-sm transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="btnSalvarContato"
+                        class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-lg text-sm transition-colors shadow-sm">
+                        <i class="fas fa-plus mr-1"></i> Adicionar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection
 
 @push('head-scripts')
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 @endpush
 
 @push('scripts')

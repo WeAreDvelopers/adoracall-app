@@ -251,18 +251,18 @@ class MailingController extends Controller
 
     /**
      * Exibe detalhes de um mailing
-     * GET /api/mailings/{id}
+     * GET /api/filas_campanha/{id}
      */
     public function show($id)
     {
-        $mailing = Mailing::with(['script', 'queueJobs'])->find($id);
+        $mailing = Mailing::with('script')->find($id);
 
         if (! $mailing) {
             return response()->json(['error' => 'Mailing não encontrado'], 404);
         }
 
-        // Estatísticas detalhadas via queue_jobs
-        $jobStats = $mailing->queueJobs()
+        // Estatísticas detalhadas via queue_jobs (sem eager load para evitar resposta enorme)
+        $jobStats = QueueJob::where('mailing_id', $id)
             ->selectRaw("
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pendentes,
@@ -272,22 +272,62 @@ class MailingController extends Controller
             ")
             ->first();
 
-        $stats = [
-            'total'        => $mailing->total_contatos,
-            'pendentes'    => (int) ($jobStats->pendentes ?? 0),
-            'processando'  => (int) ($jobStats->processando ?? 0),
-            'completados'  => (int) ($jobStats->completados ?? 0),
-            'falhados'     => (int) ($jobStats->falhados ?? 0),
-            'taxa_sucesso' => $mailing->taxa_sucesso,
-            'progresso'    => $mailing->progresso,
-        ];
+        $totalJobs = (int) ($jobStats->total ?? 0);
 
-        // Retorna no formato { data: { ...mailing, stats } } esperado pelo frontend
-        $data = $mailing->toArray();
-        $data['stats'] = $stats;
+        // Se não há jobs ainda, usa contagem de contatos importados
+        if ($totalJobs === 0) {
+            $totalContatos = Contato::withoutGlobalScopes()
+                ->where('mailing_id', $id)
+                ->count();
+            $stats = [
+                'total'        => $totalContatos > 0 ? $totalContatos : $mailing->total_contatos,
+                'pendentes'    => $totalContatos,
+                'processando'  => 0,
+                'completados'  => 0,
+                'falhados'     => 0,
+                'taxa_sucesso' => 0.0,
+                'progresso'    => 0,
+            ];
+        } else {
+            $processados = ($jobStats->completados ?? 0) + ($jobStats->falhados ?? 0);
+            $taxaSucesso = $processados > 0 ? round(($jobStats->completados / $processados) * 100, 2) : 0;
+            $stats = [
+                'total'        => $totalJobs,
+                'pendentes'    => (int) ($jobStats->pendentes ?? 0),
+                'processando'  => (int) ($jobStats->processando ?? 0),
+                'completados'  => (int) ($jobStats->completados ?? 0),
+                'falhados'     => (int) ($jobStats->falhados ?? 0),
+                'taxa_sucesso' => (float) $taxaSucesso,
+                'progresso'    => $totalJobs > 0 ? (int) round(($processados / $totalJobs) * 100) : 0,
+            ];
+        }
 
+        // Retorna resposta leve sem relacionamentos volumosos
         return response()->json([
-            'data' => $data,
+            'data' => [
+                'id'                      => $mailing->id,
+                'uuid'                    => $mailing->uuid,
+                'nome'                    => $mailing->nome,
+                'descricao'               => $mailing->descricao,
+                'status'                  => $mailing->status,
+                'tipo_publico'            => $mailing->tipo_publico,
+                'prioridade'              => $mailing->prioridade,
+                'max_tentativas'          => $mailing->max_tentativas,
+                'intervalo_retry'         => $mailing->intervalo_retry,
+                'velocidade_contatos_hora' => $mailing->velocidade_contatos_hora,
+                'taxa_sucesso'            => $mailing->taxa_sucesso,
+                'progresso'               => $mailing->progresso,
+                'total_contatos'          => $mailing->total_contatos,
+                'data_inicio'             => $mailing->data_inicio,
+                'data_fim'                => $mailing->data_fim,
+                'data_inicio_agendado'    => $mailing->data_inicio_agendado,
+                'created_at'              => $mailing->created_at,
+                'script'                  => $mailing->script ? [
+                    'id'   => $mailing->script->id,
+                    'nome' => $mailing->script->nome,
+                ] : null,
+                'stats'                   => $stats,
+            ],
         ]);
     }
 
@@ -1648,10 +1688,94 @@ class MailingController extends Controller
         $query->orderBy($ordenar_por, $ordenacao);
 
         // Paginação
-        $perPage  = $request->get('per_page', 10);
+        $perPage  = $request->get('per_page', 20);
         $contatos = $query->paginate($perPage);
 
         return response()->json($contatos);
+    }
+
+    /**
+     * Adiciona um contato manualmente a um mailing
+     * POST /api/filas_campanha/{id}/contatos
+     */
+    public function adicionarContato(Request $request, $id)
+    {
+        $mailing = Mailing::find($id);
+
+        if (! $mailing) {
+            return response()->json(['error' => 'Mailing não encontrado'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'nome'             => 'required|string|max:255',
+            'telefone'         => 'required|string|max:20',
+            'cpf'              => 'nullable|string|max:14',
+            'valor_debito'     => 'nullable|numeric|min:0',
+            'empresa_credora'  => 'nullable|string|max:255',
+            'vencimento'       => 'nullable|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $telefone = $this->formatarTelefone($request->telefone);
+
+            // Verifica duplicação no mailing
+            $existe = Contato::where('telefone', $telefone)
+                ->where('mailing_id', $id)
+                ->exists();
+
+            if ($existe) {
+                return response()->json(['error' => 'Este telefone já está cadastrado nesta campanha'], 422);
+            }
+
+            $cpf = $request->cpf ? preg_replace('/\D/', '', $request->cpf) : null;
+
+            $contato = new Contato([
+                'nome'                  => trim($request->nome),
+                'telefone'              => $telefone,
+                'cpf'                   => $cpf,
+                'cpf_primeiros_digitos' => $cpf ? substr($cpf, 0, 3) : null,
+                'valor_debito'          => $request->valor_debito ?? 0,
+                'empresa_credora'       => $request->empresa_credora,
+                'vencimento'            => $request->vencimento,
+                'campanha'              => $mailing->nome,
+                'status'                => 'pendente',
+                'tentativas'            => 0,
+            ]);
+            $contato->mailing_id = $mailing->id;
+            $contato->empresa_id = $mailing->empresa_id;
+            $contato->save();
+
+            // Atualiza total de contatos do mailing
+            $mailing->total_contatos = Contato::withoutGlobalScopes()
+                ->where('mailing_id', $id)
+                ->count();
+            if ($mailing->status === 'rascunho') {
+                $mailing->status = 'pronto';
+            }
+            $mailing->save();
+
+            return response()->json([
+                'message' => 'Contato adicionado com sucesso',
+                'contato' => [
+                    'id'             => $contato->id,
+                    'nome'           => $contato->nome,
+                    'telefone'       => $contato->telefone,
+                    'cpf'            => $contato->cpf,
+                    'valor_debito'   => $contato->valor_debito,
+                    'empresa_credora' => $contato->empresa_credora,
+                    'status'         => $contato->status,
+                    'tentativas'     => $contato->tentativas,
+                ],
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao adicionar contato manualmente', ['error' => $e->getMessage(), 'mailing_id' => $id]);
+            return response()->json(['error' => 'Erro ao adicionar contato: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
