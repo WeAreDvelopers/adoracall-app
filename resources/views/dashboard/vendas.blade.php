@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Vendas - URA Dvelopers</title>
+    <title>Dashboard de Vendas - AdoraCall</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -23,7 +23,7 @@
         .card h2 { font-size: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: #667eea; }
         
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .metric-card { padding: 20px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border-radius: 8px; text-align: center; }
+        .metric-card { padding: 20px; background: linear-gradient(135deg, #00194A 0%, #001440 100%); color: white; border-radius: 8px; text-align: center; }
         .metric-card .label { font-size: 12px; opacity: 0.9; }
         .metric-card .value { font-size: 32px; font-weight: bold; margin: 10px 0; }
         

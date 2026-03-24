@@ -76,7 +76,7 @@ function renderizarResumo() {
     document.getElementById('breadcrumbName').textContent = d.nome || 'Campanha';
     document.getElementById('campanhaTitle').textContent = d.nome || 'Campanha';
     document.getElementById('campanhaDesc').textContent = d.descricao || '';
-    document.title = `${d.nome} - URA Dvelopers`;
+    document.title = `${d.nome} - AdoraCall`;
 
     // Breadcrumb no header global
     const bc = document.getElementById('breadcrumbContainer');

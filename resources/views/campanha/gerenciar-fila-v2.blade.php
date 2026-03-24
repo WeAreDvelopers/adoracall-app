@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Gerenciar Filas - URA Dvelopers')
+@section('title', 'Gerenciar Filas - AdoraCall')
 
 @section('content')
     <style>

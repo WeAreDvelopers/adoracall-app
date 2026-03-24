@@ -167,7 +167,7 @@ class MailingController extends Controller
             'nome'                     => 'required|string|max:255',
             'script_id'                => 'nullable|integer|exists:scripts,id',
             'descricao'                => 'nullable|string|max:1000',
-            'tipo_publico'             => 'nullable|in:atraso_leve,atraso_medio,atraso_alto,inadimplencia_critica,leads_novos',
+            'tipo_publico'             => 'nullable|string|max:80',
             'velocidade_contatos_hora' => 'nullable|integer|min:5|max:500',
             'prioridade'               => 'nullable|in:baixa,normal,alta,urgente',
             'max_tentativas'           => 'nullable|integer|min:1|max:10',
@@ -261,20 +261,33 @@ class MailingController extends Controller
             return response()->json(['error' => 'Mailing não encontrado'], 404);
         }
 
-        // Estatísticas detalhadas
+        // Estatísticas detalhadas via queue_jobs
+        $jobStats = $mailing->queueJobs()
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pendentes,
+                SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processando,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completados,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as falhados
+            ")
+            ->first();
+
         $stats = [
-            'total_contatos' => $mailing->total_contatos,
-            'processados'    => $mailing->processados,
-            'sucesso'        => $mailing->sucesso,
-            'falhas'         => $mailing->falhas,
-            'pendentes'      => $mailing->total_contatos - $mailing->processados,
-            'taxa_sucesso'   => $mailing->taxa_sucesso,
-            'progresso'      => $mailing->progresso,
+            'total'        => $mailing->total_contatos,
+            'pendentes'    => (int) ($jobStats->pendentes ?? 0),
+            'processando'  => (int) ($jobStats->processando ?? 0),
+            'completados'  => (int) ($jobStats->completados ?? 0),
+            'falhados'     => (int) ($jobStats->falhados ?? 0),
+            'taxa_sucesso' => $mailing->taxa_sucesso,
+            'progresso'    => $mailing->progresso,
         ];
 
+        // Retorna no formato { data: { ...mailing, stats } } esperado pelo frontend
+        $data = $mailing->toArray();
+        $data['stats'] = $stats;
+
         return response()->json([
-            'mailing' => $mailing,
-            'stats'   => $stats,
+            'data' => $data,
         ]);
     }
 

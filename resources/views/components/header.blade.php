@@ -5,7 +5,7 @@
             <i class="fas fa-bars text-lg"></i>
         </button>
         <div class="lg:hidden">
-            <span class="text-sm font-semibold text-slate-900">URA Dvelopers</span>
+            <span class="text-sm font-semibold text-slate-900">AdoraCall</span>
         </div>
         <!-- Breadcrumb (preenchido via JS por cada pagina) -->
         <div id="breadcrumbContainer" class="hidden lg:flex items-center gap-2 text-sm text-slate-400"></div>

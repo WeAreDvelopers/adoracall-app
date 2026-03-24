@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Home - URA Dvelopers')
+@section('title', 'Home - AdoraCall')
 
 @section('content')
 

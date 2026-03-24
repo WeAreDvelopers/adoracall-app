@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() ?? '' }}">
-    <title>@yield('title', 'URA Dvelopers')</title>
+    <title>@yield('title', 'AdoraCall')</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,14 +14,24 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            200: '#fde68a',
-                            300: '#fcd34d',
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            700: '#b45309',
+                            50: '#e6edf5',
+                            100: '#ccdaeb',
+                            200: '#99b5d6',
+                            300: '#6690c2',
+                            400: '#336bad',
+                            500: '#00194A',
+                            600: '#001440',
+                            700: '#000f33',
+                        },
+                        accent: {
+                            50: '#fff9e6',
+                            100: '#fff0b3',
+                            200: '#ffe680',
+                            300: '#ffdb4d',
+                            400: '#ffd11a',
+                            500: '#FFAE00',
+                            600: '#e69d00',
+                            700: '#cc8b00',
                         }
                     },
                     fontFamily: {

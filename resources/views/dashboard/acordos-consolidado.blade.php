@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard Acordos - URA Dvelopers')
+@section('title', 'Dashboard Acordos - AdoraCall')
 
 @section('content')
     <style>

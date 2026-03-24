@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Status da Fila - URA Dvelopers')
+@section('title', 'Status da Fila - AdoraCall')
 
 @section('content')
 <!-- Page Header -->

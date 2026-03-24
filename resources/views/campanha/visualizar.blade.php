@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Campanha - URA Dvelopers')
+@section('title', 'Campanha - AdoraCall')
 
 @section('content')
     <!-- Breadcrumb -->

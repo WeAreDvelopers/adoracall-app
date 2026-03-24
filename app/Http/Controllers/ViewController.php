@@ -114,4 +114,12 @@ class ViewController extends Controller
     {
         return view('campanha.visualizar', ['campanhaId' => $id]);
     }
+
+    /**
+     * Gerenciamento de tipos de público
+     */
+    public function tiposPublico()
+    {
+        return view('campanha.tipos-publico');
+    }
 }

@@ -651,7 +651,7 @@ function atualizarGraficos() {
             datasets: [{
                 label: 'Progresso (%)',
                 data: mailingsComTaxa.map(m => m.progresso),
-                backgroundColor: '#ffae00',
+                backgroundColor: '#00194A',
                 borderRadius: 4,
                 borderSkipped: false
             }]

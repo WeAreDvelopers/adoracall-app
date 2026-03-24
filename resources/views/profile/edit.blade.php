@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Perfil - URA Dvelopers')
+@section('title', 'Editar Perfil - AdoraCall')
 
 @section('content')
     <div class="notion-card">

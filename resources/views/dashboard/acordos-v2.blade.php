@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard Acordos - URA Dvelopers')
+@section('title', 'Dashboard Acordos - AdoraCall')
 
 @section('content')
 <div class="dashboard-wrapper">
@@ -802,7 +802,7 @@
                 labels: status.map(s => s.status),
                 datasets: [{
                     data: status.map(s => s.total),
-                    backgroundColor: ['#fbbf24', '#10b981', '#ef4444'],
+                    backgroundColor: ['#FFAE00', '#10b981', '#ef4444'],
                     borderColor: 'white',
                     borderWidth: 2
                 }]

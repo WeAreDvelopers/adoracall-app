@@ -198,7 +198,7 @@ function renderizarOverview(data) {
         const progressPercent = mailing.total > 0 ? ((mailing.completed / mailing.total) * 100).toFixed(1) : 0;
 
         return `
-            <div style="padding: 15px; background: #f9f9f9; border-radius: 4px; border-left: 4px solid #ffae00;">
+            <div style="padding: 15px; background: #f9f9f9; border-radius: 4px; border-left: 4px solid #00194A;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h4 style="margin: 0;">${mailing.name}</h4>
                     <span style="font-size: 12px; color: #999;">${mailing.total} total</span>

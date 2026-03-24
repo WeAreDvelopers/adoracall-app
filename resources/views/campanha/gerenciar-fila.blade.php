@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Controle de Fila - URA Dvelopers')
+@section('title', 'Controle de Fila - AdoraCall')
 
 @section('content')
 <div class="page-header">

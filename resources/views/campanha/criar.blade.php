@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Criar Campanha - URA Dvelopers')
+@section('title', 'Criar Campanha - AdoraCall')
 
 @section('content')
     <!-- Page Header -->
@@ -35,110 +35,20 @@
 
         <!-- Seleção de Estratégia -->
         <div class="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 class="text-base font-semibold text-slate-900 mb-4">
-                <i class="fas fa-bullseye text-brand-500 mr-2"></i>Tipo de P&uacute;blico
-            </h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-semibold text-slate-900">
+                    <i class="fas fa-bullseye text-brand-500 mr-2"></i>Tipo de P&uacute;blico
+                    <span class="text-xs font-normal text-slate-400 ml-1">(opcional)</span>
+                </h3>
+                <a href="/tipos-publico" class="text-xs text-brand-600 hover:text-brand-700 font-medium transition-colors">
+                    <i class="fas fa-cog mr-1"></i>Gerenciar tipos
+                </a>
+            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                <!-- Público A -->
-                <label class="cursor-pointer">
-                    <input type="radio" name="tipo_publico" value="atraso_leve" class="hidden peer" onchange="atualizarEstrategia('atraso_leve')">
-                    <div id="card-atraso_leve" class="border-2 border-slate-200 rounded-xl p-4 transition-all peer-checked:border-brand-500 peer-checked:bg-brand-50/30 hover:border-slate-300 hover:shadow-sm">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-sm">A</div>
-                            <div>
-                                <p class="font-semibold text-slate-900 text-sm">Atraso Leve</p>
-                                <p class="text-xs text-slate-500">1 a 15 dias</p>
-                            </div>
-                        </div>
-                        <p class="text-xs text-slate-500 mb-3">Cliente ainda "quente", maior chance de sucesso.</p>
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Tentativas:</span><span class="text-brand-600 font-semibold">6</span></div>
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Dias:</span><span class="text-brand-600 font-semibold">2</span></div>
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Por hora:</span><span class="text-brand-600 font-semibold">40-60</span></div>
-                        </div>
-                    </div>
-                </label>
-
-                <!-- Público B -->
-                <label class="cursor-pointer">
-                    <input type="radio" name="tipo_publico" value="atraso_medio" class="hidden peer" onchange="atualizarEstrategia('atraso_medio')">
-                    <div id="card-atraso_medio" class="border-2 border-slate-200 rounded-xl p-4 transition-all peer-checked:border-brand-500 peer-checked:bg-brand-50/30 hover:border-slate-300 hover:shadow-sm">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-sm">B</div>
-                            <div>
-                                <p class="font-semibold text-slate-900 text-sm">Atraso M&eacute;dio</p>
-                                <p class="text-xs text-slate-500">16 a 60 dias</p>
-                            </div>
-                        </div>
-                        <p class="text-xs text-slate-500 mb-3">Objetivo de negocia&ccedil;&atilde;o e acordo.</p>
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Tentativas:</span><span class="text-brand-600 font-semibold">6</span></div>
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Dias:</span><span class="text-brand-600 font-semibold">3</span></div>
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Por hora:</span><span class="text-brand-600 font-semibold">30-40</span></div>
-                        </div>
-                    </div>
-                </label>
-
-                <!-- Público C -->
-                <label class="cursor-pointer">
-                    <input type="radio" name="tipo_publico" value="atraso_alto" class="hidden peer" onchange="atualizarEstrategia('atraso_alto')">
-                    <div id="card-atraso_alto" class="border-2 border-slate-200 rounded-xl p-4 transition-all peer-checked:border-brand-500 peer-checked:bg-brand-50/30 hover:border-slate-300 hover:shadow-sm">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-sm">C</div>
-                            <div>
-                                <p class="font-semibold text-slate-900 text-sm">Atraso Alto</p>
-                                <p class="text-xs text-slate-500">61 a 180 dias</p>
-                            </div>
-                        </div>
-                        <p class="text-xs text-slate-500 mb-3">&Uacute;ltima tentativa autom&aacute;tica. Abordagem conservadora.</p>
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Tentativas:</span><span class="text-brand-600 font-semibold">5</span></div>
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Dias:</span><span class="text-brand-600 font-semibold">3</span></div>
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Por hora:</span><span class="text-brand-600 font-semibold">20-30</span></div>
-                        </div>
-                    </div>
-                </label>
-
-                <!-- Público D -->
-                <label class="cursor-pointer">
-                    <input type="radio" name="tipo_publico" value="inadimplencia_critica" class="hidden peer" onchange="atualizarEstrategia('inadimplencia_critica')">
-                    <div id="card-inadimplencia_critica" class="border-2 border-slate-200 rounded-xl p-4 transition-all peer-checked:border-brand-500 peer-checked:bg-brand-50/30 hover:border-slate-300 hover:shadow-sm">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-10 h-10 rounded-full bg-red-700 text-white flex items-center justify-center font-bold text-sm">D</div>
-                            <div>
-                                <p class="font-semibold text-slate-900 text-sm">Inadimpl&ecirc;ncia Cr&iacute;tica</p>
-                                <p class="text-xs text-slate-500">Pr&eacute;-jur&iacute;dico</p>
-                            </div>
-                        </div>
-                        <p class="text-xs text-slate-500 mb-3">Comunica&ccedil;&atilde;o formal e conservadora.</p>
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Tentativas:</span><span class="text-brand-600 font-semibold">3</span></div>
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Dias:</span><span class="text-brand-600 font-semibold">3</span></div>
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Por hora:</span><span class="text-brand-600 font-semibold">20</span></div>
-                        </div>
-                    </div>
-                </label>
-
-                <!-- Público E -->
-                <label class="cursor-pointer">
-                    <input type="radio" name="tipo_publico" value="leads_novos" class="hidden peer" onchange="atualizarEstrategia('leads_novos')">
-                    <div id="card-leads_novos" class="border-2 border-slate-200 rounded-xl p-4 transition-all peer-checked:border-brand-500 peer-checked:bg-brand-50/30 hover:border-slate-300 hover:shadow-sm">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm">E</div>
-                            <div>
-                                <p class="font-semibold text-slate-900 text-sm">Leads / Confirma&ccedil;&atilde;o</p>
-                                <p class="text-xs text-slate-500">Novos contatos</p>
-                            </div>
-                        </div>
-                        <p class="text-xs text-slate-500 mb-3">Valida&ccedil;&atilde;o de contato. Taxa alta de resposta.</p>
-                        <div class="space-y-1.5">
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Tentativas:</span><span class="text-brand-600 font-semibold">4</span></div>
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Dias:</span><span class="text-brand-600 font-semibold">2</span></div>
-                            <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Por hora:</span><span class="text-brand-600 font-semibold">50-60</span></div>
-                        </div>
-                    </div>
-                </label>
+            <div id="tiposPublicoGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div class="col-span-full flex items-center justify-center py-6 text-slate-400 text-sm">
+                    <i class="fas fa-spinner fa-spin mr-2"></i> Carregando tipos...
+                </div>
             </div>
 
             <div id="strategyInsight" class="hidden mt-4 bg-brand-50 border-l-4 border-brand-500 rounded-r-lg p-4">
@@ -223,30 +133,88 @@
 
     @push('scripts')
         <script>
-            const estrategias = {
-                atraso_leve: { nome: 'Atraso Leve (1-15 dias)', max_tentativas: 6, dias: 2, velocidade_contatos_hora: 50, intervalo_retry: 240, prioridade: 'alta', insight: 'Taxa de contato alta. Vale insistir mais com intervalos menores entre tentativas.' },
-                atraso_medio: { nome: 'Atraso M\u00e9dio (16-60 dias)', max_tentativas: 6, dias: 3, velocidade_contatos_hora: 35, intervalo_retry: 360, prioridade: 'normal', insight: 'Menos insist\u00eancia di\u00e1ria (2-3 tentativas/dia), mas cobertura ampla de hor\u00e1rios.' },
-                atraso_alto: { nome: 'Atraso Alto (61-180 dias)', max_tentativas: 5, dias: 3, velocidade_contatos_hora: 25, intervalo_retry: 720, prioridade: 'normal', insight: 'Contato mais dif\u00edcil. Evitar insist\u00eancia excessiva para n\u00e3o gerar bloqueios.' },
-                inadimplencia_critica: { nome: 'Inadimpl\u00eancia Cr\u00edtica (Pr\u00e9-jur\u00eddico)', max_tentativas: 3, dias: 3, velocidade_contatos_hora: 20, intervalo_retry: 1440, prioridade: 'baixa', insight: 'Abordagem altamente conservadora. Apenas 1 tentativa por dia. Risco legal elevado.' },
-                leads_novos: { nome: 'Leads / Confirma\u00e7\u00e3o de Dados', max_tentativas: 4, dias: 2, velocidade_contatos_hora: 55, intervalo_retry: 360, prioridade: 'alta', insight: 'Novo contato = alta receptividade. Focar em valida\u00e7\u00e3o r\u00e1pida e confirma\u00e7\u00e3o.' }
-            };
+            // Fallback: tipos padrão caso a API não retorne nenhum
+            const tiposPadrao = [
+                { slug: 'atraso_leve', nome: 'Atraso Leve', subtitulo: '1 a 15 dias', descricao: 'Cliente ainda "quente", maior chance de sucesso.', cor: '#22c55e', icone: 'A', max_tentativas: 6, dias_estimados: 2, velocidade_contatos_hora: 50, intervalo_retry: 240, prioridade: 'alta', faixa_velocidade: '40-60', insight: 'Taxa de contato alta. Vale insistir mais com intervalos menores entre tentativas.' },
+                { slug: 'atraso_medio', nome: 'Atraso M\u00e9dio', subtitulo: '16 a 60 dias', descricao: 'Objetivo de negocia\u00e7\u00e3o e acordo.', cor: '#f97316', icone: 'B', max_tentativas: 6, dias_estimados: 3, velocidade_contatos_hora: 35, intervalo_retry: 360, prioridade: 'normal', faixa_velocidade: '30-40', insight: 'Menos insist\u00eancia di\u00e1ria (2-3 tentativas/dia), mas cobertura ampla de hor\u00e1rios.' },
+                { slug: 'atraso_alto', nome: 'Atraso Alto', subtitulo: '61 a 180 dias', descricao: '\u00daltima tentativa autom\u00e1tica. Abordagem conservadora.', cor: '#ef4444', icone: 'C', max_tentativas: 5, dias_estimados: 3, velocidade_contatos_hora: 25, intervalo_retry: 720, prioridade: 'normal', faixa_velocidade: '20-30', insight: 'Contato mais dif\u00edcil. Evitar insist\u00eancia excessiva para n\u00e3o gerar bloqueios.' },
+                { slug: 'inadimplencia_critica', nome: 'Inadimpl\u00eancia Cr\u00edtica', subtitulo: 'Pr\u00e9-jur\u00eddico', descricao: 'Comunica\u00e7\u00e3o formal e conservadora.', cor: '#b91c1c', icone: 'D', max_tentativas: 3, dias_estimados: 3, velocidade_contatos_hora: 20, intervalo_retry: 1440, prioridade: 'baixa', faixa_velocidade: '20', insight: 'Abordagem altamente conservadora. Apenas 1 tentativa por dia. Risco legal elevado.' },
+                { slug: 'leads_novos', nome: 'Leads / Confirma\u00e7\u00e3o', subtitulo: 'Novos contatos', descricao: 'Valida\u00e7\u00e3o de contato. Taxa alta de resposta.', cor: '#3b82f6', icone: 'E', max_tentativas: 4, dias_estimados: 2, velocidade_contatos_hora: 55, intervalo_retry: 360, prioridade: 'alta', faixa_velocidade: '50-60', insight: 'Novo contato = alta receptividade. Focar em valida\u00e7\u00e3o r\u00e1pida e confirma\u00e7\u00e3o.' },
+            ];
 
-            function atualizarEstrategia(tipo) {
-                const estrategia = estrategias[tipo];
-                if (!estrategia) return;
+            let tiposDisponiveis = [];
+            let tipoSelecionado = null;
 
-                document.getElementById('max_tentativas').value = estrategia.max_tentativas;
-                document.getElementById('velocidade_contatos_hora').value = estrategia.velocidade_contatos_hora;
-                document.getElementById('intervalo_retry').value = estrategia.intervalo_retry;
-                document.getElementById('prioridade').value = estrategia.prioridade;
+            // ========== CARREGAR TIPOS ==========
+
+            async function carregarTiposPublico() {
+                const grid = document.getElementById('tiposPublicoGrid');
+
+                try {
+                    const res = await fetchWithAuth(`${API_BASE_URL}/tipos-publico?ativo=1`);
+                    const data = await res.json();
+                    tiposDisponiveis = (data.tipos && data.tipos.length > 0) ? data.tipos : tiposPadrao;
+                } catch (e) {
+                    tiposDisponiveis = tiposPadrao;
+                }
+
+                renderizarTiposPublico();
+            }
+
+            function renderizarTiposPublico() {
+                const grid = document.getElementById('tiposPublicoGrid');
+
+                grid.innerHTML = tiposDisponiveis.map(tipo => {
+                    const slug = tipo.slug;
+                    return `
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tipo_publico" value="${slug}" class="hidden peer" onchange="selecionarTipo('${slug}')">
+                            <div id="card-${slug}" class="border-2 border-slate-200 rounded-xl p-4 transition-all peer-checked:border-brand-500 peer-checked:bg-brand-50/30 hover:border-slate-300 hover:shadow-sm">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-10 h-10 rounded-full text-white flex items-center justify-center font-bold text-sm" style="background-color: ${tipo.cor}">${tipo.icone || tipo.nome.charAt(0)}</div>
+                                    <div>
+                                        <p class="font-semibold text-slate-900 text-sm">${tipo.nome}</p>
+                                        <p class="text-xs text-slate-500">${tipo.subtitulo || ''}</p>
+                                    </div>
+                                </div>
+                                ${tipo.descricao ? `<p class="text-xs text-slate-500 mb-3">${tipo.descricao}</p>` : ''}
+                                <div class="space-y-1.5">
+                                    <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Tentativas:</span><span class="text-brand-600 font-semibold">${tipo.max_tentativas}</span></div>
+                                    <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Dias:</span><span class="text-brand-600 font-semibold">${tipo.dias_estimados}</span></div>
+                                    <div class="flex justify-between text-xs bg-slate-50 rounded px-2 py-1"><span class="text-slate-500">Por hora:</span><span class="text-brand-600 font-semibold">${tipo.faixa_velocidade || tipo.velocidade_contatos_hora}</span></div>
+                                </div>
+                            </div>
+                        </label>`;
+                }).join('');
+            }
+
+            // ========== SELEÇÃO ==========
+
+            function selecionarTipo(slug) {
+                const tipo = tiposDisponiveis.find(t => t.slug === slug);
+                if (!tipo) return;
+
+                tipoSelecionado = tipo;
+
+                document.getElementById('max_tentativas').value = tipo.max_tentativas;
+                document.getElementById('velocidade_contatos_hora').value = tipo.velocidade_contatos_hora;
+                document.getElementById('intervalo_retry').value = tipo.intervalo_retry;
+                document.getElementById('prioridade').value = tipo.prioridade;
 
                 const insightBox = document.getElementById('strategyInsight');
                 const insightText = document.getElementById('insightText');
-                insightText.innerHTML = `<strong>${estrategia.nome}:</strong> ${estrategia.insight}`;
-                insightBox.classList.remove('hidden');
+
+                if (tipo.insight) {
+                    insightText.innerHTML = `<strong>${tipo.nome}${tipo.subtitulo ? ' (' + tipo.subtitulo + ')' : ''}:</strong> ${tipo.insight}`;
+                    insightBox.classList.remove('hidden');
+                } else {
+                    insightBox.classList.add('hidden');
+                }
 
                 atualizarDuracao();
             }
+
+            // ========== DURAÇÃO ==========
 
             function atualizarDuracao() {
                 const tentativas = parseInt(document.getElementById('max_tentativas').value);
@@ -263,11 +231,13 @@
                 durationBox.classList.remove('hidden');
             }
 
+            // ========== SUBMIT ==========
+
             document.addEventListener('DOMContentLoaded', function() {
+                carregarTiposPublico();
+
                 document.getElementById('criarCampanhaForm').addEventListener('submit', async function(e) {
                     e.preventDefault();
-                    const tipoPublico = document.querySelector('input[name="tipo_publico"]:checked');
-                    if (!tipoPublico) { showAlert('Selecione um tipo de p\u00fablico', 'error'); return; }
 
                     const dataInicio = document.getElementById('data_inicio_agendado').value;
                     const dataFim = document.getElementById('data_fim_agendado').value;
@@ -290,6 +260,8 @@
                     btnSubmit.disabled = true;
                     btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Criando...';
 
+                    const tipoPublico = document.querySelector('input[name="tipo_publico"]:checked');
+
                     const formData = {
                         nome: document.getElementById('nome').value,
                         descricao: document.getElementById('descricao').value,
@@ -299,7 +271,7 @@
                         intervalo_retry: parseInt(document.getElementById('intervalo_retry').value),
                         data_inicio_agendado: document.getElementById('data_inicio_agendado').value || null,
                         data_fim_agendado: document.getElementById('data_fim_agendado').value || null,
-                        tipo_publico: document.querySelector('input[name="tipo_publico"]:checked').value,
+                        tipo_publico: tipoPublico ? tipoPublico.value : null,
                     };
 
                     const response = await fetchWithAuth(`${API_BASE_URL}/filas_campanha`, { method: 'POST', body: JSON.stringify(formData) });

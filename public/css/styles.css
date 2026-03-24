@@ -8,14 +8,14 @@
    ============================================ */
 :root {
     /* Cores Primárias Dvelopers */
-    --primary-color: #ffae00;
-    --primary-dark: #e69900;
-    --primary-gold: #ffae00;
+    --primary-color: #00194A;
+    --primary-dark: #001440;
+    --primary-gold: #FFAE00;
 
     /* Cores Azuis Dvelopers */
-    --dark-blue: #010e38;
-    --secondary-blue: #0a01b4;
-    --bright-blue: #1b68ff;
+    --dark-blue: #00194A;
+    --secondary-blue: #001440;
+    --bright-blue: #336bad;
 
     /* Cores Neutras */
     --dark-gray: #333333;

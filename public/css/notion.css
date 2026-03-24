@@ -1,7 +1,7 @@
 /* ============================================
    NOTION DESIGN SYSTEM - URA Dvelopers
    Estilo minimalista inspirado em Notion
-   com identidade Dvelopers (ouro #ffae00)
+   com identidade Dvelopers (azul #00194A + amarelo #FFAE00)
    ============================================ */
 
 /* ============================================
@@ -22,10 +22,13 @@
     --notion-bg-hover: #f1f0ee;
     --notion-bg-light: #fafaf9;
 
-    /* Identidade Dvelopers - Ouro */
-    --dvelopers-gold: #ffae00;
-    --dvelopers-gold-dark: #e69900;
-    --dvelopers-gold-light: #fff3d6;
+    /* Identidade Dvelopers - Azul + Amarelo */
+    --dvelopers-gold: #FFAE00;
+    --dvelopers-gold-dark: #e69d00;
+    --dvelopers-gold-light: #fff9e6;
+    --dvelopers-blue: #00194A;
+    --dvelopers-blue-dark: #001440;
+    --dvelopers-blue-light: #e6edf5;
 
     /* Estados - Notion */
     --notion-blue: #0b6adb;

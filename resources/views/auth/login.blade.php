@@ -1,15 +1,12 @@
 @extends('layouts.auth')
 
-@section('title', 'Login - URA Dvelopers')
+@section('title', 'Login - AdoraCall')
 
 @section('content')
 <div class="w-full max-w-md">
     <!-- Logo & Branding -->
     <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-brand-500 rounded-2xl mb-4 shadow-lg shadow-brand-500/20">
-            <i class="fas fa-phone-alt text-white text-2xl"></i>
-        </div>
-        <h1 class="text-2xl font-bold text-slate-900">URA Dvelopers</h1>
+        <img src="{{ asset('logo.svg') }}" alt="Dvelopers" class="h-12 mx-auto mb-4">
         <p class="text-slate-500 text-sm mt-1">Plataforma de Cobran&ccedil;a Inteligente</p>
     </div>
 

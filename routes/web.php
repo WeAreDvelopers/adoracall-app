@@ -55,6 +55,9 @@ $router->get('/campanhas/{id}', ['as' => 'campanhas.show', 'uses' => 'ViewContro
 $router->get('/operacao/painel', ['as' => 'operacao.painel', 'uses' => 'ViewController@gerenciarFila']);
 $router->get('/operacao/chamadas', ['as' => 'operacao.chamadas', 'uses' => 'ViewController@statusLigacoes']);
 
+// Tipos de Público
+$router->get('/tipos-publico', ['as' => 'tipos-publico.index', 'uses' => 'ViewController@tiposPublico']);
+
 // Campanha (rotas legadas - mantidas para backward compatibility)
 $router->group(['prefix' => 'campanha'], function () use ($router) {
     $router->get('/criar', ['as' => 'campanha.criar', 'uses' => 'ViewController@criarCampanha']);
@@ -271,6 +274,16 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         $router->post('/{id}/intencoes', 'ScriptController@adicionarIntencao');
         $router->put('/{id}/intencoes/{intencaoId}', 'ScriptController@atualizarIntencao');
         $router->delete('/{id}/intencoes/{intencaoId}', 'ScriptController@removerIntencao');
+    });
+
+    // ========== TIPOS DE PÚBLICO ==========
+    $router->group(['prefix' => 'tipos-publico', 'middleware' => 'auth.jwt'], function () use ($router) {
+        $router->get('/', 'TipoPublicoController@index');
+        $router->post('/', 'TipoPublicoController@store');
+        $router->put('/reordenar', 'TipoPublicoController@reordenar');
+        $router->get('/{id}', 'TipoPublicoController@show');
+        $router->put('/{id}', 'TipoPublicoController@update');
+        $router->delete('/{id}', 'TipoPublicoController@destroy');
     });
 
     // ========== FILAS DE CAMPANHA ==========

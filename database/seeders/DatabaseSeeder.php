@@ -15,5 +15,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(ScriptSeeder::class);
         $this->call(UserSeeder::class);
+        $this->call(TipoPublicoSeeder::class);
     }
 }
