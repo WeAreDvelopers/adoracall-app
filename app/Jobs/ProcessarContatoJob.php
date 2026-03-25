@@ -118,7 +118,6 @@ class ProcessarContatoJob extends Job
                 'nome_cliente'            => trim($primeiroNome),
                 'sobrenome'               => trim($sobrenome),
                 'credora'                 => $nomeCredora,
-                'cpf'                     => $contato->cpf,
                 'valida_doc'              => $cpfValidacao,
                 'valor_devido'            => $converter->valorPorExtenso($contato->valor_debito),
                 'data_vencimento'         => $contato->vencimento ? $contato->vencimento->format('d/m/Y') : '01/01/2025',

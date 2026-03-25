@@ -140,9 +140,11 @@ class CallController extends Controller
             $numParcelas = (int)($validated['max_parcelas'] ?? $configuracao->max_parcelas ?? 3);
 
             $dynamicVariables = [
+                'customer_id'             => (string) $contato->id,
                 'nome_cliente'            => $validated['primeiro_nome'],
                 'sobrenome'               => $validated['sobrenome'] ?? '',
                 'credora'                 => $empresaCredora ?? 'Empresa',
+                'valida_doc'              => $primeirosDigitosCpf,
                 'valor_devido'            => number_format($validated['valor_devido'], 2, ',', '.'),
                 'data_vencimento'         => $validated['data_vencimento'],
                 'percentual_desconto'     => round($desconto * 100) . '%',

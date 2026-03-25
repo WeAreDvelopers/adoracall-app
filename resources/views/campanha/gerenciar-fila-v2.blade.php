@@ -3,848 +3,100 @@
 @section('title', 'Gerenciar Filas - AdoraCall')
 
 @section('content')
-    <style>
-        .page-header {
-            margin-bottom: 2rem;
-        }
-
-        .page-header h1 {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            color: var(--notion-text);
-        }
-
-        .page-header p {
-            color: var(--notion-text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .controls-bar {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .control-card {
-            background: var(--notion-bg);
-            border: 1px solid var(--notion-border);
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .control-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .control-card-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--notion-text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .control-card-header i {
-            font-size: 0.9rem;
-            opacity: 0.7;
-        }
-
-        .controls-bar-left {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.65rem 1rem;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
-
-        .btn-primary {
-            background: var(--dvelopers-gold);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--dvelopers-gold-dark);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(255, 174, 0, 0.3);
-        }
-
-        .btn-secondary {
-            background: var(--notion-bg-secondary);
-            color: var(--notion-text);
-            border: 1px solid var(--notion-border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--notion-border);
-            transform: translateY(-1px);
-        }
-
-        .filters {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.6rem;
-        }
-
-        .filter-group label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--notion-text);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .filter-group select {
-            padding: 0.65rem 0.75rem;
-            border: 1px solid var(--notion-border);
-            border-radius: 6px;
-            background: var(--notion-bg-secondary);
-            color: var(--notion-text);
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .filter-group select:hover {
-            border-color: var(--dvelopers-gold);
-        }
-
-        .filter-group select:focus {
-            outline: none;
-            border-color: var(--dvelopers-gold);
-            box-shadow: 0 0 0 2px rgba(255, 174, 0, 0.1);
-        }
-
-        .refresh-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
-        }
-
-        .refresh-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .refresh-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--notion-border);
-            transition: all 0.3s ease;
-        }
-
-        .refresh-dot.active {
-            background: var(--dvelopers-gold);
-            box-shadow: 0 0 8px var(--dvelopers-gold);
-        }
-
-        .refresh-time {
-            display: flex;
-            flex-direction: column;
-            gap: 0.3rem;
-        }
-
-        .refresh-time-label {
-            font-size: 0.75rem;
-            color: var(--notion-text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
-        }
-
-        .refresh-time-value {
-            font-size: 0.9rem;
-            color: var(--notion-text);
-            font-weight: 500;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .table-container {
-            background: var(--notion-bg);
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .notion-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .notion-table thead {
-            background: var(--notion-bg-secondary);
-            border-bottom: 2px solid var(--notion-border);
-        }
-
-        .notion-table th {
-            padding: 1rem;
-            text-align: left;
-            font-weight: 600;
-            color: var(--notion-text);
-            font-size: 0.9rem;
-        }
-
-        .notion-table td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--notion-border);
-            color: var(--notion-text);
-        }
-
-        .notion-table tbody tr:hover {
-            background: var(--notion-bg-secondary);
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
-        .status-ativo {
-            background: #c8e6c9;
-            color: #1b5e20;
-        }
-
-        .status-pausado {
-            background: #fff9c4;
-            color: #f57f17;
-        }
-
-        .status-pronto {
-            background: #bbdefb;
-            color: #01579b;
-        }
-
-        .status-concluido {
-            background: #a5d6a7;
-            color: #1b5e20;
-        }
-
-        .status-cancelado {
-            background: #ffcdd2;
-            color: #b71c1c;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 0.75rem;
-        }
-
-        .stat {
-            text-align: center;
-            padding: 0.75rem;
-            background: var(--notion-bg-secondary);
-            border-radius: 4px;
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--notion-text-secondary);
-            margin-bottom: 0.25rem;
-        }
-
-        .stat-value {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--notion-text);
-        }
-
-        .stat-pending {
-            color: #f57f17;
-        }
-
-        .stat-processing {
-            color: #1976d2;
-        }
-
-        .stat-completed {
-            color: #388e3c;
-        }
-
-        .stat-failed {
-            color: #d32f2f;
-        }
-
-        .progress-container {
-            width: 100%;
-            height: 6px;
-            background: var(--notion-border);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, var(--dvelopers-gold), #ffd700);
-            transition: width 0.3s;
-        }
-
-        .row-controls {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .btn-action {
-            padding: 0.5rem 0.75rem;
-            border: none;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            position: relative;
-        }
-
-        .btn-action:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .btn-action.loading::after {
-            content: '';
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            margin-left: 4px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .btn-action-start {
-            background: #4caf50;
-            color: white;
-        }
-
-        .btn-action-start:hover:not(:disabled) {
-            background: #45a049;
-            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-        }
-
-        .btn-action-pause {
-            background: #ff9800;
-            color: white;
-        }
-
-        .btn-action-pause:hover:not(:disabled) {
-            background: #e68900;
-            box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
-        }
-
-        .btn-action-resume {
-            background: #2196f3;
-            color: white;
-        }
-
-        .btn-action-resume:hover:not(:disabled) {
-            background: #0b7dda;
-            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
-        }
-
-        .btn-action-retry {
-            background: #9c27b0;
-            color: white;
-        }
-
-        .btn-action-retry:hover:not(:disabled) {
-            background: #7b1fa2;
-            box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
-        }
-
-        .btn-action-restart {
-            background: #00897b;
-            color: white;
-        }
-
-        .btn-action-restart:hover:not(:disabled) {
-            background: #00695c;
-            box-shadow: 0 2px 8px rgba(0, 137, 123, 0.3);
-        }
-
-        .btn-action-stop {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-action-stop:hover:not(:disabled) {
-            background: #da190b;
-            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
-        }
-
-        .btn-action-contacts {
-            background: #546e7a;
-            color: white;
-        }
-
-        .btn-action-contacts:hover:not(:disabled) {
-            background: #455a64;
-            box-shadow: 0 2px 8px rgba(84, 110, 122, 0.3);
-        }
-
-        /* Modal Contatos */
-        .modal-contatos .modal-content {
-            max-width: 800px;
-            width: 90%;
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .modal-contatos-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .modal-contatos-header h2 {
-            margin: 0;
-            color: var(--notion-text);
-        }
-
-        .modal-contatos-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--notion-text-secondary);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-        }
-
-        .modal-contatos-close:hover {
-            background: var(--notion-bg-secondary);
-        }
-
-        .modal-contatos-filters {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .modal-contatos-filters input,
-        .modal-contatos-filters select {
-            padding: 0.5rem 0.75rem;
-            border: 1px solid var(--notion-border);
-            border-radius: 6px;
-            font-size: 0.85rem;
-            background: var(--notion-bg);
-            color: var(--notion-text);
-        }
-
-        .modal-contatos-filters input {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .modal-contatos-body {
-            overflow-y: auto;
-            flex: 1;
-            min-height: 200px;
-        }
-
-        .contatos-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-        }
-
-        .contatos-table th {
-            background: var(--notion-bg-secondary);
-            padding: 0.6rem 0.75rem;
-            text-align: left;
-            font-weight: 600;
-            color: var(--notion-text-secondary);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-
-        .contatos-table td {
-            padding: 0.6rem 0.75rem;
-            border-bottom: 1px solid var(--notion-border);
-            color: var(--notion-text);
-        }
-
-        .contatos-table tr:hover td {
-            background: var(--notion-bg-secondary);
-        }
-
-        .contato-status {
-            display: inline-block;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .contato-status-pendente { background: #e3f2fd; color: #1565c0; }
-        .contato-status-em_ligacao { background: #fff3e0; color: #e65100; }
-        .contato-status-finalizado { background: #e8f5e9; color: #2e7d32; }
-        .contato-status-acordo_firmado { background: #e8f5e9; color: #1b5e20; }
-        .contato-status-falha { background: #ffebee; color: #c62828; }
-        .contato-status-sem_resposta { background: #fce4ec; color: #ad1457; }
-
-        .contatos-pagination {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0 0;
-            font-size: 0.85rem;
-            color: var(--notion-text-secondary);
-        }
-
-        .contatos-pagination-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .contatos-pagination-buttons button {
-            padding: 0.4rem 0.75rem;
-            border: 1px solid var(--notion-border);
-            border-radius: 4px;
-            background: var(--notion-bg);
-            color: var(--notion-text);
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-
-        .contatos-pagination-buttons button:hover:not(:disabled) {
-            background: var(--notion-bg-secondary);
-        }
-
-        .contatos-pagination-buttons button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .contatos-loading {
-            text-align: center;
-            padding: 2rem;
-            color: var(--notion-text-secondary);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: var(--notion-text-secondary);
-        }
-
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        .empty-state h3 {
-            margin-bottom: 0.5rem;
-            color: var(--notion-text);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--notion-bg);
-            padding: 2rem;
-            border-radius: 8px;
-            max-width: 400px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .modal-content h2 {
-            margin-bottom: 1rem;
-            color: var(--notion-text);
-        }
-
-        .modal-content p {
-            margin-bottom: 1.5rem;
-            color: var(--notion-text-secondary);
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
-        }
-
-        .modal-btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .modal-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .modal-btn.loading::after {
-            content: '';
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            margin-left: 4px;
-            border: 2px solid rgba(0, 0, 0, 0.3);
-            border-top-color: currentColor;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        .modal-btn-cancel {
-            background: var(--notion-bg-secondary);
-            color: var(--notion-text);
-        }
-
-        .modal-btn-cancel:hover:not(:disabled) {
-            background: var(--notion-border);
-        }
-
-        .modal-btn-confirm {
-            background: #f44336;
-            color: white;
-        }
-
-        .modal-btn-confirm:hover:not(:disabled) {
-            background: #da190b;
-            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
-        }
-
-        footer {
-            text-align: center;
-            padding: 1.5rem;
-            margin-top: 2rem;
-            color: var(--notion-text-secondary);
-            font-size: 0.85rem;
-            border-top: 1px solid var(--notion-border);
-        }
-
-        @media (max-width: 1024px) {
-            .stats {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
-            .controls-bar {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .page-header h1 {
-                font-size: 1.4rem;
-            }
-
-            .controls-bar {
-                grid-template-columns: 1fr;
-            }
-
-            .stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .row-controls {
-                flex-direction: column;
-            }
-
-            .btn-action {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .control-card {
-                padding: 1.2rem;
-            }
-
-            .controls-bar-left {
-                gap: 0.5rem;
-            }
-
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .refresh-indicator {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .refresh-time {
-                width: 100%;
-            }
-        }
-    </style>
     <!-- Page Header -->
-    <div class="page-header">
-        <h1>📊 Gerenciamento de Filas</h1>
-        <p>Controle individual de cada campanha/fila de processamento</p>
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Gerenciamento de Filas</h1>
+            <p class="text-slate-500 text-sm mt-1">Controle individual de cada campanha/fila de processamento</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="toggleAutoRefresh()"
+                class="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors border border-slate-300">
+                <i class="fas fa-clock"></i>
+                Auto-refresh: <strong id="autoRefreshStatus">OFF</strong>
+            </button>
+            <button onclick="loadQueues()"
+                class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors shadow-sm">
+                <i class="fas fa-sync-alt"></i>
+                <span>Atualizar</span>
+            </button>
+        </div>
     </div>
 
     <!-- Controls Bar -->
-    <div class="controls-bar">
-        <!-- Ações Rápidas -->
-        <div class="control-card">
-            <div class="control-card-header">
-                <i class="fas fa-bolt"></i>
-                Ações Rápidas
-            </div>
-            <div class="controls-bar-left">
-                <button class="btn btn-primary" onclick="loadQueues()">
-                    <i class="fas fa-sync"></i> Atualizar
-                </button>
-                <button class="btn btn-secondary" onclick="toggleAutoRefresh()">
-                    <i class="fas fa-clock"></i> Auto-refresh: <strong id="autoRefreshStatus">OFF</strong>
-                </button>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- Filtro por Status -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <label class="block text-xs font-medium text-slate-600 mb-1.5">Filtrar por Status</label>
+            <select id="statusFilter" onchange="applyFilters()"
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                <option value="">Todos os status</option>
+                <option value="ativo">Ativo</option>
+                <option value="pausado">Pausado</option>
+                <option value="pronto">Pronto</option>
+                <option value="concluido">Concluído</option>
+                <option value="cancelado">Cancelado</option>
+            </select>
+        </div>
+
+        <!-- Sincronização -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Sincronização</p>
+            <div class="flex items-center gap-2 mt-1.5">
+                <span class="w-2 h-2 rounded-full bg-slate-300 transition-all" id="refreshDot"></span>
+                <span class="text-sm font-medium text-slate-900" id="syncStatus">Aguardando</span>
             </div>
         </div>
 
-        <!-- Filtros -->
-        <div class="control-card">
-            <div class="control-card-header">
-                <i class="fas fa-filter"></i>
-                Filtros
-            </div>
-            <div class="filters">
-                <div class="filter-group">
-                    <label>Por Status</label>
-                    <select id="statusFilter" onchange="applyFilters()">
-                        <option value="">Todos</option>
-                        <option value="ativo">Ativo</option>
-                        <option value="pausado">Pausado</option>
-                        <option value="pronto">Pronto</option>
-                        <option value="concluido">Concluído</option>
-                        <option value="cancelado">Cancelado</option>
-                    </select>
-                </div>
-            </div>
+        <!-- Última Atualização -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Última Atualização</p>
+            <p class="text-2xl font-bold text-slate-900 mt-1 tabular-nums" id="lastUpdate">Nunca</p>
         </div>
+    </div>
 
-        <!-- Status Sincronização -->
-        <div class="control-card">
-            <div class="control-card-header">
-                <i class="fas fa-circle-notch"></i>
-                Sincronização
-            </div>
-            <div class="refresh-indicator">
-                <div class="refresh-status">
-                    <div class="refresh-dot" id="refreshDot"></div>
-                    <span style="font-size: 0.9rem; color: var(--notion-text); font-weight: 500;">
-                        <span id="syncStatus">Aguardando</span>
-                    </span>
-                </div>
-                <div class="refresh-time">
-                    <div class="refresh-time-label">Última atualização</div>
-                    <div class="refresh-time-value" id="lastUpdate">Nunca</div>
-                </div>
-            </div>
-        </div>
+    <!-- Loading -->
+    <div id="loadingState" class="bg-white rounded-xl border border-slate-200 p-12 text-center">
+        <i class="fas fa-spinner fa-spin text-2xl text-brand-500"></i>
+        <p class="mt-3 text-sm text-slate-500">Carregando filas...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden bg-white rounded-xl border border-slate-200 p-12 text-center">
+        <i class="fas fa-inbox text-4xl text-slate-300"></i>
+        <p class="mt-3 text-base font-medium text-slate-600">Nenhuma fila encontrada</p>
+        <p class="mt-1 text-sm text-slate-400">Crie uma campanha para começar</p>
     </div>
 
     <!-- Table -->
-    <div class="table-container">
-        <table class="notion-table" id="queuesTable">
-            <thead>
-                <tr>
-                    <th style="width: 20%;">Campanha</th>
-                    <th style="width: 12%;">Status</th>
-                    <th style="width: 28%;">Estatísticas</th>
-                    <th style="width: 15%;">Progresso</th>
-                    <th style="width: 25%;">Ações</th>
-                </tr>
-            </thead>
-            <tbody id="queuesBody">
-                <tr>
-                    <td colspan="5" class="empty-state">
-                        <i class="fas fa-hourglass-start"></i>
-                        <h3>Carregando filas...</h3>
-                        <p>Por favor, aguarde</p>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+    <div id="tableContainer" class="hidden bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full" id="queuesTable">
+                <thead>
+                    <tr class="border-b border-slate-200 bg-slate-50">
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-5 py-3" style="width: 20%;">Campanha</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-5 py-3" style="width: 12%;">Status</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-5 py-3" style="width: 28%;">Estatísticas</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-5 py-3" style="width: 15%;">Progresso</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-5 py-3" style="width: 25%;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="queuesBody" class="divide-y divide-slate-100">
+                </tbody>
+            </table>
+        </div>
     </div>
-    <!-- <footer>
-        <p>&copy; 2026 We Are Dvelopers. Todos os direitos reservados.</p>
-    </footer> -->
 
     <!-- Confirmation Modal -->
-    <div class="modal" id="confirmModal">
-        <div class="modal-content">
-            <h2 id="modalTitle">Confirmar Ação</h2>
-            <p id="modalMessage">Tem certeza?</p>
-            <div class="modal-actions">
-                <button class="modal-btn modal-btn-cancel" onclick="closeModal()">
+    <div class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center" id="confirmModal">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h2 class="text-lg font-bold text-slate-900 mb-2" id="modalTitle">Confirmar Ação</h2>
+            <p class="text-sm text-slate-500 mb-6" id="modalMessage">Tem certeza?</p>
+            <div class="flex items-center justify-end gap-3">
+                <button class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal()">
                     Cancelar
                 </button>
-                <button class="modal-btn modal-btn-confirm" onclick="confirmAction()">
+                <button class="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors" id="confirmBtn" onclick="confirmAction()">
                     Confirmar
                 </button>
             </div>
@@ -852,15 +104,20 @@
     </div>
 
     <!-- Modal Contatos -->
-    <div class="modal modal-contatos" id="contatosModal">
-        <div class="modal-content">
-            <div class="modal-contatos-header">
-                <h2 id="contatosModalTitle">Contatos</h2>
-                <button class="modal-contatos-close" onclick="closeContatosModal()">&times;</button>
+    <div class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center" id="contatosModal">
+        <div class="bg-white rounded-xl shadow-xl max-w-3xl w-[90%] max-h-[85vh] mx-4 p-6 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-slate-900" id="contatosModalTitle">Contatos</h2>
+                <button class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg p-1.5 transition-colors" onclick="closeContatosModal()">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
             </div>
-            <div class="modal-contatos-filters">
-                <input type="text" id="contatosBusca" placeholder="Buscar por nome, telefone ou CPF..." onkeydown="if(event.key==='Enter') loadContatos()">
-                <select id="contatosStatusFilter" onchange="loadContatos()">
+            <div class="flex flex-wrap gap-3 mb-4">
+                <input type="text" id="contatosBusca" placeholder="Buscar por nome, telefone ou CPF..."
+                    class="flex-1 min-w-[200px] px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                    onkeydown="if(event.key==='Enter') loadContatos()">
+                <select id="contatosStatusFilter" onchange="loadContatos()"
+                    class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
                     <option value="">Todos os status</option>
                     <option value="pendente">Pendente</option>
                     <option value="em_ligacao">Em ligação</option>
@@ -869,14 +126,20 @@
                     <option value="sem_resposta">Sem resposta</option>
                 </select>
             </div>
-            <div class="modal-contatos-body" id="contatosBody">
-                <div class="contatos-loading">Carregando contatos...</div>
+            <div class="overflow-y-auto flex-1 min-h-[200px]" id="contatosBody">
+                <div class="text-center py-8 text-slate-500 text-sm">Carregando contatos...</div>
             </div>
-            <div class="contatos-pagination" id="contatosPagination" style="display:none;">
+            <div class="flex items-center justify-between pt-3 border-t border-slate-200 mt-3 text-sm text-slate-500" id="contatosPagination" style="display:none;">
                 <span id="contatosInfo"></span>
-                <div class="contatos-pagination-buttons">
-                    <button id="contatosPrev" onclick="loadContatos(contatosCurrentPage - 1)">Anterior</button>
-                    <button id="contatosNext" onclick="loadContatos(contatosCurrentPage + 1)">Próxima</button>
+                <div class="flex items-center gap-2">
+                    <button id="contatosPrev" onclick="loadContatos(contatosCurrentPage - 1)"
+                        class="px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Anterior
+                    </button>
+                    <button id="contatosNext" onclick="loadContatos(contatosCurrentPage + 1)"
+                        class="px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Próxima
+                    </button>
                 </div>
             </div>
         </div>
@@ -901,7 +164,6 @@
                 if (!response.ok) throw new Error('Erro ao buscar filas');
 
                 const data = await response.json();
-                // Adaptar para nova estrutura de dados
                 queues = data.data || data.filas || [];
 
                 renderQueues();
@@ -918,11 +180,20 @@
         // Renderizar tabela de filas
         function renderQueues() {
             const tbody = document.getElementById('queuesBody');
+            const loadingState = document.getElementById('loadingState');
+            const emptyState = document.getElementById('emptyState');
+            const tableContainer = document.getElementById('tableContainer');
+
+            loadingState.classList.add('hidden');
 
             if (!queues || queues.length === 0) {
-                showEmptyState('Nenhuma fila encontrada', 'Crie uma campanha para começar');
+                emptyState.classList.remove('hidden');
+                tableContainer.classList.add('hidden');
                 return;
             }
+
+            emptyState.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
 
             let html = '';
 
@@ -934,52 +205,46 @@
                 const taxaSucesso = stats.taxa_sucesso || 0;
 
                 html += `
-                <tr>
-                    <td>
-                        <div style="font-weight: 600; margin-bottom: 4px;">${queue.nome}</div>
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-5 py-4">
+                        <span class="font-semibold text-sm text-slate-900">${queue.nome}</span>
                     </td>
-                    <td>
-                        <span class="status-badge status-${queue.status}">
-                            ${getStatusIcon(queue.status)} ${getStatusLabel(queue.status)}
-                        </span>
+                    <td class="px-5 py-4">
+                        ${getStatusBadge(queue.status)}
                     </td>
-                    <td>
-                        <div class="stats">
-                            <div class="stat">
-                                <div class="stat-label">Total</div>
-                                <div class="stat-value">${stats.total || 0}</div>
+                    <td class="px-5 py-4">
+                        <div class="grid grid-cols-5 gap-2">
+                            <div class="text-center">
+                                <p class="text-[10px] font-medium text-slate-400 uppercase">Total</p>
+                                <p class="text-sm font-bold text-slate-900">${stats.total || 0}</p>
                             </div>
-                            <div class="stat">
-                                <div class="stat-label">Pendente</div>
-                                <div class="stat-value stat-pending">${stats.pendentes || 0}</div>
+                            <div class="text-center">
+                                <p class="text-[10px] font-medium text-amber-500 uppercase">Pendente</p>
+                                <p class="text-sm font-bold text-slate-900">${stats.pendentes || 0}</p>
                             </div>
-                            <div class="stat">
-                                <div class="stat-label">Processando</div>
-                                <div class="stat-value stat-processing">${stats.processando || 0}</div>
+                            <div class="text-center">
+                                <p class="text-[10px] font-medium text-blue-500 uppercase">Processando</p>
+                                <p class="text-sm font-bold text-slate-900">${stats.processando || 0}</p>
                             </div>
-                            <div class="stat">
-                                <div class="stat-label">Completo</div>
-                                <div class="stat-value stat-completed">${stats.completados || 0}</div>
+                            <div class="text-center">
+                                <p class="text-[10px] font-medium text-emerald-600 uppercase">Completo</p>
+                                <p class="text-sm font-bold text-slate-900">${stats.completados || 0}</p>
                             </div>
-                            <div class="stat">
-                                <div class="stat-label">Falha</div>
-                                <div class="stat-value stat-failed">${stats.falhados || 0}</div>
+                            <div class="text-center">
+                                <p class="text-[10px] font-medium text-red-500 uppercase">Falha</p>
+                                <p class="text-sm font-bold text-slate-900">${stats.falhados || 0}</p>
                             </div>
                         </div>
                     </td>
-                    <td>
-                        <div style="margin-bottom: 8px; font-size: 12px;">
-                            ${progresso}% (${processados}/${total})
+                    <td class="px-5 py-4">
+                        <div class="text-xs text-slate-600 mb-1.5 font-medium">${progresso}% (${processados}/${total})</div>
+                        <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div class="h-full bg-brand-500 rounded-full transition-all" style="width: ${progresso}%"></div>
                         </div>
-                        <div class="progress-container">
-                            <div class="progress-bar" style="width: ${progresso}%"></div>
-                        </div>
-                        <div style="font-size: 11px; color: #999; margin-top: 4px;">
-                            Taxa sucesso: <strong>${taxaSucesso.toFixed(1)}%</strong>
-                        </div>
+                        <div class="text-[11px] text-slate-400 mt-1">Taxa sucesso: <strong class="text-slate-600">${taxaSucesso.toFixed(1)}%</strong></div>
                     </td>
-                    <td>
-                        <div class="row-controls">
+                    <td class="px-5 py-4">
+                        <div class="flex flex-wrap gap-1.5">
                             ${renderActionButtons(queue)}
                         </div>
                     </td>
@@ -990,46 +255,50 @@
             tbody.innerHTML = html;
         }
 
+        // Status badge com Tailwind
+        function getStatusBadge(status) {
+            const config = {
+                'ativo': { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-600/20', icon: 'fa-circle', label: 'Ativo' },
+                'pausado': { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-600/20', icon: 'fa-pause-circle', label: 'Pausado' },
+                'pronto': { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-600/20', icon: 'fa-check-circle', label: 'Pronto' },
+                'concluido': { bg: 'bg-slate-50', text: 'text-slate-700', ring: 'ring-slate-600/20', icon: 'fa-flag-checkered', label: 'Concluído' },
+                'cancelado': { bg: 'bg-red-50', text: 'text-red-700', ring: 'ring-red-600/20', icon: 'fa-times-circle', label: 'Cancelado' },
+            };
+            const c = config[status] || { bg: 'bg-slate-50', text: 'text-slate-700', ring: 'ring-slate-600/20', icon: 'fa-question-circle', label: status };
+            return `<span data-status="${status}" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text} ring-1 ring-inset ${c.ring}">
+                <i class="fas ${c.icon} text-[10px]"></i> ${c.label}
+            </span>`;
+        }
+
         // Renderizar botões de ação
         function renderActionButtons(queue) {
-            console.log('Renderizando botões para fila:', queue);
             const mailingId = queue.id;
             const hasFalhas = queue.stats && queue.stats.falhados > 0;
             let buttons = '';
 
-            // Botões de controle de status
+            const btnBase = 'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+
             if (queue.status === 'pronto' || queue.status === 'rascunho') {
-                buttons +=
-                    `<button class="btn-action btn-action-start" id="btn-ativar-${mailingId}" onclick="activateMailing(${mailingId})"><i class="fas fa-play"></i> Ativar</button>`;
+                buttons += `<button class="${btnBase} bg-emerald-500 hover:bg-emerald-600 text-white" id="btn-ativar-${mailingId}" onclick="activateMailing(${mailingId})"><i class="fas fa-play text-[10px]"></i> Ativar</button>`;
             } else if (queue.status === 'ativo') {
-                buttons +=
-                    `<button class="btn-action btn-action-pause" id="btn-pausar-${mailingId}" onclick="pauseMailing(${mailingId})"><i class="fas fa-pause"></i> Pausar</button>`;
+                buttons += `<button class="${btnBase} bg-amber-500 hover:bg-amber-600 text-white" id="btn-pausar-${mailingId}" onclick="pauseMailing(${mailingId})"><i class="fas fa-pause text-[10px]"></i> Pausar</button>`;
             } else if (queue.status === 'pausado') {
-                buttons +=
-                    `<button class="btn-action btn-action-resume" id="btn-retomar-${mailingId}" onclick="resumeMailing(${mailingId})"><i class="fas fa-play"></i> Retomar</button>`;
+                buttons += `<button class="${btnBase} bg-blue-500 hover:bg-blue-600 text-white" id="btn-retomar-${mailingId}" onclick="resumeMailing(${mailingId})"><i class="fas fa-play text-[10px]"></i> Retomar</button>`;
             }
 
-            // Botão Reprocessar (quando há falhas)
             if (hasFalhas && queue.status !== 'cancelado') {
-                buttons +=
-                    `<button class="btn-action btn-action-retry" id="btn-reprocessar-${mailingId}" onclick="reprocessarMailing(${mailingId})"><i class="fas fa-redo"></i> Reprocessar</button>`;
+                buttons += `<button class="${btnBase} bg-purple-500 hover:bg-purple-600 text-white" id="btn-reprocessar-${mailingId}" onclick="reprocessarMailing(${mailingId})"><i class="fas fa-redo text-[10px]"></i> Reprocessar</button>`;
             }
 
-            // Botão Reiniciar (reseta tudo e reativa)
             if (queue.status !== 'cancelado') {
-                buttons +=
-                    `<button class="btn-action btn-action-restart" id="btn-reiniciar-${mailingId}" onclick="showReiniciarConfirm(${mailingId}, '${queue.nome}')"><i class="fas fa-sync-alt"></i> Reiniciar</button>`;
+                buttons += `<button class="${btnBase} bg-teal-500 hover:bg-teal-600 text-white" id="btn-reiniciar-${mailingId}" onclick="showReiniciarConfirm(${mailingId}, '${queue.nome}')"><i class="fas fa-sync-alt text-[10px]"></i> Reiniciar</button>`;
             }
 
-            // Botão Parar
             if (queue.status !== 'concluido' && queue.status !== 'cancelado') {
-                buttons +=
-                    `<button class="btn-action btn-action-stop" id="btn-parar-${mailingId}" onclick="showStopConfirm(${mailingId}, '${queue.nome}')"><i class="fas fa-stop"></i> Parar</button>`;
+                buttons += `<button class="${btnBase} bg-red-500 hover:bg-red-600 text-white" id="btn-parar-${mailingId}" onclick="showStopConfirm(${mailingId}, '${queue.nome}')"><i class="fas fa-stop text-[10px]"></i> Parar</button>`;
             }
 
-            // Botão Ver Contatos
-            buttons +=
-                `<button class="btn-action btn-action-contacts" onclick="openContatosModal(${mailingId}, '${queue.nome}')"><i class="fas fa-users"></i> Contatos</button>`;
+            buttons += `<button class="${btnBase} bg-slate-500 hover:bg-slate-600 text-white" onclick="openContatosModal(${mailingId}, '${queue.nome}')"><i class="fas fa-users text-[10px]"></i> Contatos</button>`;
 
             return buttons;
         }
@@ -1041,9 +310,10 @@
             if (button) {
                 button.disabled = isLoading;
                 if (isLoading) {
-                    button.classList.add('loading');
-                } else {
-                    button.classList.remove('loading');
+                    const icon = button.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-spinner fa-spin text-[10px]';
+                    }
                 }
             }
         }
@@ -1063,7 +333,7 @@
                 }
 
                 const data = await response.json();
-                console.log('✅ [ATIVAR] Resposta:', data);
+                console.log('[ATIVAR] Resposta:', data);
 
                 if (typeof feedback !== 'undefined') {
                     feedback.success(`Campanha ativada! ${data.jobs_criados || 0} jobs criados.`);
@@ -1071,7 +341,7 @@
 
                 await loadQueues();
             } catch (error) {
-                console.error('❌ [ATIVAR] Erro:', error);
+                console.error('[ATIVAR] Erro:', error);
                 if (typeof feedback !== 'undefined') {
                     feedback.error(error.message || 'Erro ao ativar campanha');
                 }
@@ -1094,7 +364,7 @@
                 }
 
                 const data = await response.json();
-                console.log('✅ [PAUSAR] Resposta:', data);
+                console.log('[PAUSAR] Resposta:', data);
 
                 if (typeof feedback !== 'undefined') {
                     feedback.success('Campanha pausada!');
@@ -1102,7 +372,7 @@
 
                 await loadQueues();
             } catch (error) {
-                console.error('❌ [PAUSAR] Erro:', error);
+                console.error('[PAUSAR] Erro:', error);
                 if (typeof feedback !== 'undefined') {
                     feedback.error(error.message || 'Erro ao pausar campanha');
                 }
@@ -1125,7 +395,7 @@
                 }
 
                 const data = await response.json();
-                console.log('✅ [RETOMAR] Resposta:', data);
+                console.log('[RETOMAR] Resposta:', data);
 
                 if (typeof feedback !== 'undefined') {
                     feedback.success(`Campanha retomada! ${data.jobs_criados || 0} jobs criados.`);
@@ -1133,7 +403,7 @@
 
                 await loadQueues();
             } catch (error) {
-                console.error('❌ [RETOMAR] Erro:', error);
+                console.error('[RETOMAR] Erro:', error);
                 if (typeof feedback !== 'undefined') {
                     feedback.error(error.message || 'Erro ao retomar campanha');
                 }
@@ -1156,7 +426,7 @@
                 }
 
                 const data = await response.json();
-                console.log('✅ [REPROCESSAR] Resposta:', data);
+                console.log('[REPROCESSAR] Resposta:', data);
 
                 if (typeof feedback !== 'undefined') {
                     feedback.success(`Reprocessamento iniciado! ${data.total || 0} jobs resetados para retry.`);
@@ -1164,7 +434,7 @@
 
                 await loadQueues();
             } catch (error) {
-                console.error('❌ [REPROCESSAR] Erro:', error);
+                console.error('[REPROCESSAR] Erro:', error);
                 if (typeof feedback !== 'undefined') {
                     feedback.error(error.message || 'Erro ao reprocessar campanha');
                 }
@@ -1177,11 +447,10 @@
             document.getElementById('modalTitle').textContent = 'Cancelar Campanha?';
             document.getElementById('modalMessage').textContent =
                 `Deseja cancelar a campanha "${mailingName}"? Isso irá parar o processamento da fila.`;
-            pendingAction = {
-                action: 'cancel',
-                mailingId
-            };
-            document.getElementById('confirmModal').classList.add('active');
+            pendingAction = { action: 'cancel', mailingId };
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
 
         async function cancelMailing(mailingId) {
@@ -1198,7 +467,7 @@
                 }
 
                 const data = await response.json();
-                console.log('✅ [CANCELAR] Resposta:', data);
+                console.log('[CANCELAR] Resposta:', data);
 
                 if (typeof feedback !== 'undefined') {
                     feedback.success('Campanha cancelada!');
@@ -1206,7 +475,7 @@
 
                 await loadQueues();
             } catch (error) {
-                console.error('❌ [CANCELAR] Erro:', error);
+                console.error('[CANCELAR] Erro:', error);
                 if (typeof feedback !== 'undefined') {
                     feedback.error(error.message || 'Erro ao cancelar campanha');
                 }
@@ -1219,11 +488,10 @@
             document.getElementById('modalTitle').textContent = 'Reiniciar Fila?';
             document.getElementById('modalMessage').textContent =
                 `Deseja reiniciar a fila "${mailingName}"? Todos os jobs serão resetados para pendente e a campanha será reativada. Contatos com acordo firmado não serão afetados.`;
-            pendingAction = {
-                action: 'reiniciar',
-                mailingId
-            };
-            document.getElementById('confirmModal').classList.add('active');
+            pendingAction = { action: 'reiniciar', mailingId };
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
 
         async function reiniciarMailing(mailingId) {
@@ -1261,10 +529,8 @@
         async function confirmAction() {
             if (!pendingAction) return;
 
-            const confirmBtn = document.querySelector('.modal-btn-confirm');
-            const cancelBtn = document.querySelector('.modal-btn-cancel');
+            const confirmBtn = document.getElementById('confirmBtn');
             if (confirmBtn) confirmBtn.disabled = true;
-            if (cancelBtn) cancelBtn.disabled = true;
 
             if (pendingAction.action === 'cancel') {
                 await cancelMailing(pendingAction.mailingId);
@@ -1273,12 +539,13 @@
             }
 
             if (confirmBtn) confirmBtn.disabled = false;
-            if (cancelBtn) cancelBtn.disabled = false;
             closeModal();
         }
 
         function closeModal() {
-            document.getElementById('confirmModal').classList.remove('active');
+            const modal = document.getElementById('confirmModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             pendingAction = null;
         }
 
@@ -1288,14 +555,16 @@
                 clearInterval(autoRefreshInterval);
                 autoRefreshInterval = null;
                 document.getElementById('autoRefreshStatus').textContent = 'OFF';
-                document.getElementById('refreshDot').classList.remove('active');
+                document.getElementById('refreshDot').classList.remove('bg-brand-500', 'shadow-[0_0_8px_theme(colors.brand.500)]');
+                document.getElementById('refreshDot').classList.add('bg-slate-300');
                 if (typeof feedback !== 'undefined') {
                     feedback.info('Auto-refresh desativado');
                 }
             } else {
                 autoRefreshInterval = setInterval(loadQueues, 5000);
                 document.getElementById('autoRefreshStatus').textContent = 'ON';
-                document.getElementById('refreshDot').classList.add('active');
+                document.getElementById('refreshDot').classList.remove('bg-slate-300');
+                document.getElementById('refreshDot').classList.add('bg-brand-500', 'shadow-[0_0_8px_theme(colors.brand.500)]');
                 if (typeof feedback !== 'undefined') {
                     feedback.success('Auto-refresh ativado (5s)');
                 }
@@ -1310,7 +579,6 @@
 
             document.getElementById('lastUpdate').textContent = `${hours}:${minutes}:${seconds}`;
 
-            // Atualizar status de sincronização
             const syncStatus = document.getElementById('syncStatus');
             if (syncStatus) {
                 syncStatus.textContent = autoRefreshInterval ? 'Sincronizando' : 'Aguardando';
@@ -1328,8 +596,8 @@
                     return;
                 }
 
-                const statusCell = row.querySelector('.status-badge');
-                if (statusCell && statusCell.className.includes(`status-${statusFilter}`)) {
+                const badge = row.querySelector('[data-status]');
+                if (badge && badge.dataset.status === statusFilter) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
@@ -1338,39 +606,13 @@
         }
 
         // Helpers
-        function getStatusIcon(status) {
-            const icons = {
-                'ativo': '🟢',
-                'pausado': '🟡',
-                'pronto': '🔵',
-                'concluido': '✅',
-                'cancelado': '❌'
-            };
-            return icons[status] || '❓';
-        }
-
-        function getStatusLabel(status) {
-            const labels = {
-                'ativo': 'Ativo',
-                'pausado': 'Pausado',
-                'pronto': 'Pronto',
-                'concluido': 'Concluído',
-                'cancelado': 'Cancelado'
-            };
-            return labels[status] || status;
-        }
-
         function showEmptyState(title, message) {
-            const tbody = document.getElementById('queuesBody');
-            tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <h3>${title}</h3>
-                    <p>${message}</p>
-                </td>
-            </tr>
-        `;
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('tableContainer').classList.add('hidden');
+            const emptyState = document.getElementById('emptyState');
+            emptyState.classList.remove('hidden');
+            emptyState.querySelector('.text-base').textContent = title;
+            emptyState.querySelector('.text-sm').textContent = message;
         }
 
         // ===== Modal de Contatos =====
@@ -1383,12 +625,16 @@
             document.getElementById('contatosModalTitle').textContent = `Contatos - ${mailingName}`;
             document.getElementById('contatosBusca').value = '';
             document.getElementById('contatosStatusFilter').value = '';
-            document.getElementById('contatosModal').classList.add('active');
+            const modal = document.getElementById('contatosModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
             loadContatos();
         }
 
         function closeContatosModal() {
-            document.getElementById('contatosModal').classList.remove('active');
+            const modal = document.getElementById('contatosModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             contatosMailingId = null;
         }
 
@@ -1397,7 +643,7 @@
             contatosCurrentPage = page;
 
             const body = document.getElementById('contatosBody');
-            body.innerHTML = '<div class="contatos-loading"><i class="fas fa-spinner fa-spin"></i> Carregando contatos...</div>';
+            body.innerHTML = '<div class="text-center py-8 text-slate-500 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando contatos...</div>';
             document.getElementById('contatosPagination').style.display = 'none';
 
             const busca = document.getElementById('contatosBusca').value;
@@ -1415,7 +661,7 @@
                 renderContatos(data);
             } catch (error) {
                 console.error('[CONTATOS] Erro:', error);
-                body.innerHTML = `<div class="contatos-loading" style="color: #f44336;">Erro ao carregar contatos: ${error.message}</div>`;
+                body.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Erro ao carregar contatos: ${error.message}</div>`;
             }
         }
 
@@ -1424,33 +670,43 @@
             const contatos = data.data || [];
 
             if (contatos.length === 0) {
-                body.innerHTML = '<div class="contatos-loading">Nenhum contato encontrado</div>';
+                body.innerHTML = '<div class="text-center py-8 text-slate-500 text-sm">Nenhum contato encontrado</div>';
                 document.getElementById('contatosPagination').style.display = 'none';
                 return;
             }
 
-            let html = `<table class="contatos-table">
+            const statusConfig = {
+                'pendente': 'bg-blue-50 text-blue-700',
+                'em_ligacao': 'bg-amber-50 text-amber-700',
+                'finalizado': 'bg-emerald-50 text-emerald-700',
+                'acordo_firmado': 'bg-emerald-100 text-emerald-800',
+                'falha': 'bg-red-50 text-red-700',
+                'sem_resposta': 'bg-pink-50 text-pink-700',
+            };
+
+            let html = `<table class="w-full text-sm">
                 <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Telefone</th>
-                        <th>Valor Débito</th>
-                        <th>Status</th>
-                        <th>Tentativas</th>
+                    <tr class="border-b border-slate-200 bg-slate-50">
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-2.5 sticky top-0 bg-slate-50 z-10">Nome</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-2.5 sticky top-0 bg-slate-50 z-10">Telefone</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-2.5 sticky top-0 bg-slate-50 z-10">Valor Débito</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-2.5 sticky top-0 bg-slate-50 z-10">Status</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide px-4 py-2.5 sticky top-0 bg-slate-50 z-10">Tentativas</th>
                     </tr>
                 </thead>
-                <tbody>`;
+                <tbody class="divide-y divide-slate-100">`;
 
             contatos.forEach(c => {
                 const statusClass = (c.status || '').replace(/\s+/g, '_');
+                const classes = statusConfig[statusClass] || 'bg-slate-50 text-slate-700';
                 const valor = c.valor_debito ? parseFloat(c.valor_debito).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-';
                 html += `
-                    <tr>
-                        <td>${c.nome || '-'} ${c.sobrenome || ''}</td>
-                        <td>${c.telefone || '-'}</td>
-                        <td>${valor}</td>
-                        <td><span class="contato-status contato-status-${statusClass}">${c.status || '-'}</span></td>
-                        <td>${c.tentativas || 0}</td>
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-2.5 text-slate-900">${c.nome || '-'} ${c.sobrenome || ''}</td>
+                        <td class="px-4 py-2.5 text-slate-600">${c.telefone || '-'}</td>
+                        <td class="px-4 py-2.5 text-slate-600">${valor}</td>
+                        <td class="px-4 py-2.5"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${classes}">${c.status || '-'}</span></td>
+                        <td class="px-4 py-2.5 text-slate-600">${c.tentativas || 0}</td>
                     </tr>`;
             });
 
@@ -1469,9 +725,12 @@
             pagination.style.display = total > 0 ? 'flex' : 'none';
         }
 
-        // Fechar modal de contatos clicando fora
+        // Fechar modais clicando fora
         document.getElementById('contatosModal').addEventListener('click', function(e) {
             if (e.target === this) closeContatosModal();
+        });
+        document.getElementById('confirmModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
         });
     </script>
 @endpush

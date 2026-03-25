@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Contato;
 use App\Services\RetellNegotiationService;
+use App\Services\SecurityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -24,6 +25,7 @@ class NegociacaoController extends Controller
      */
     public function buscar(Request $request): JsonResponse
     {
+        Log::info($request);
         $this->validate($request, [
             'customer_id' => 'required',
         ]);
@@ -41,12 +43,24 @@ class NegociacaoController extends Controller
                 ], 404);
             }
 
-            $cpf = $contato->cpf;
+            $cpfEncriptado = $contato->cpf;
 
-            if (!$cpf) {
+            if (!$cpfEncriptado) {
                 return response()->json([
                     'error'   => true,
                     'message' => 'CPF/CNPJ não encontrado para este contato.',
+                ], 422);
+            }
+
+            // Decriptar CPF antes de enviar para a API Adora
+            $security = app(SecurityService::class);
+            $cpf = $security->decryptCpf($cpfEncriptado);
+
+            if (empty($cpf)) {
+                Log::error("[NEGOCIACAO] Falha ao decriptar CPF do contato {$customerId}");
+                return response()->json([
+                    'error'   => true,
+                    'message' => 'Erro ao processar documento do cliente.',
                 ], 422);
             }
 
