@@ -25,42 +25,49 @@ class NegociacaoController extends Controller
      */
     public function buscar(Request $request): JsonResponse
     {
-        Log::info($request);
-        $this->validate($request, [
-            'customer_id' => 'required',
-        ]);
+        Log::info('[NEGOCIACAO] Request recebido', $request->all());
 
         $customerId = $request->input('customer_id');
+        $doc = $request->input('doc');
 
         try {
-            // Buscar contato no sistema para obter o CPF
-            $contato = Contato::find($customerId);
+            $cpf = null;
 
-            if (!$contato) {
-                return response()->json([
-                    'error'   => true,
-                    'message' => 'Contato não encontrado.',
-                ], 404);
+            // Tentar buscar pelo customer_id (contato_id) se for numérico
+            if ($customerId && is_numeric($customerId)) {
+                $contato = Contato::find($customerId);
+
+                if ($contato && $contato->cpf) {
+                    $cpfRaw = $contato->cpf;
+
+                    // CPF pode estar encriptado ou em texto plano
+                    $cpfLimpo = preg_replace('/[^0-9]/', '', $cpfRaw);
+                    if (strlen($cpfLimpo) === 11) {
+                        $cpf = $cpfLimpo;
+                    } else {
+                        $security = app(SecurityService::class);
+                        $cpf = $security->decryptCpf($cpfRaw);
+                    }
+                }
             }
 
-            $cpfEncriptado = $contato->cpf;
+            // Fallback: usar doc (CPF) enviado diretamente pelo Retell
+            if (empty($cpf) && !empty($doc)) {
+                $cpfLimpo = preg_replace('/[^0-9]/', '', $doc);
+                if (strlen($cpfLimpo) === 11) {
+                    $cpf = $cpfLimpo;
+                    Log::info("[NEGOCIACAO] Usando CPF do parâmetro doc como fallback");
+                }
+            }
 
-            if (!$cpfEncriptado) {
+            if (empty($cpf)) {
+                Log::error("[NEGOCIACAO] CPF não encontrado", [
+                    'customer_id' => $customerId,
+                    'doc' => $doc,
+                ]);
                 return response()->json([
                     'error'   => true,
                     'message' => 'CPF/CNPJ não encontrado para este contato.',
-                ], 422);
-            }
-
-            // Decriptar CPF antes de enviar para a API Adora
-            $security = app(SecurityService::class);
-            $cpf = $security->decryptCpf($cpfEncriptado);
-
-            if (empty($cpf)) {
-                Log::error("[NEGOCIACAO] Falha ao decriptar CPF do contato {$customerId}");
-                return response()->json([
-                    'error'   => true,
-                    'message' => 'Erro ao processar documento do cliente.',
                 ], 422);
             }
 

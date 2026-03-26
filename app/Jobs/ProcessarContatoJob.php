@@ -85,18 +85,28 @@ class ProcessarContatoJob extends Job
             $primeiroNome = $nomeParts[0] ?? $contato->nome;
             $sobrenome    = $contato->sobrenome ?? (isset($nomeParts[1]) ? $nomeParts[1] : '');
 
-            // Usa CPF encriptado ou primeiros dígitos como fallback
+            // Obter CPF em texto plano para enviar ao Retell
+            $cpfPlano = '';
             $cpfValidacao = $contato->cpf_primeiros_digitos ?? '000';
-            // $cpfDescriptografado = decrypt($contato->cpf);
-            // Log::info("🔐 [JOB-CPF-DECRYPT] CPF descriptografado com sucesso para contato {$cpfDescriptografado}");
-            // try {
-            //     if (! empty($contato->cpf)) {
-            //         $cpfValidacao = substr($cpfDescriptografado, 0, 3);
-            //     }
-            // } catch (\Exception $e) {
-            //     Log::warning("⚠️  [JOB-CPF-DECRYPT] Erro ao descriptografar CPF: {$e->getMessage()}, usando primeiros dígitos");
-            //     $cpfValidacao = $contato->cpf_primeiros_digitos ?? '000';
-            // }
+
+            if (!empty($contato->cpf)) {
+                $cpfLimpo = preg_replace('/[^0-9]/', '', $contato->cpf);
+                if (strlen($cpfLimpo) === 11) {
+                    // CPF já está em texto plano
+                    $cpfPlano = $cpfLimpo;
+                    $cpfValidacao = substr($cpfLimpo, 0, 3);
+                } else {
+                    // CPF encriptado - tentar decriptar
+                    try {
+                        $cpfDescriptografado = decrypt($contato->cpf);
+                        $cpfPlano = preg_replace('/[^0-9]/', '', $cpfDescriptografado);
+                        $cpfValidacao = substr($cpfPlano, 0, 3);
+                    } catch (\Exception $e) {
+                        Log::warning("[JOB-CPF-DECRYPT] Erro ao descriptografar CPF: {$e->getMessage()}, usando primeiros dígitos");
+                        $cpfPlano = $contato->cpf_primeiros_digitos ?? '';
+                    }
+                }
+            }
 
             // Buscar configurações da empresa
             $empresa = Empresa::withoutGlobalScopes()->find($mailing->empresa_id);
@@ -118,7 +128,8 @@ class ProcessarContatoJob extends Job
                 'nome_cliente'            => trim($primeiroNome),
                 'sobrenome'               => trim($sobrenome),
                 'credora'                 => $nomeCredora,
-                'valida_doc'              => $cpfValidacao,
+                'cpf'                     => $cpfPlano,
+                'documento'               => $cpfValidacao,
                 'valor_devido'            => $converter->valorPorExtenso($contato->valor_debito),
                 'data_vencimento'         => $contato->vencimento ? $contato->vencimento->format('d/m/Y') : '01/01/2025',
                 'percentual_desconto'     => round($desconto * 100) . '%',
