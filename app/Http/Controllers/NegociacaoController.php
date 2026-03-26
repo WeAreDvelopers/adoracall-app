@@ -25,7 +25,6 @@ class NegociacaoController extends Controller
      */
     public function buscar(Request $request): JsonResponse
     {
-        Log::info('[NEGOCIACAO] Request recebido', $request->all());
 
         $customerId = $request->input('customer_id');
         $doc = $request->input('doc');
@@ -56,7 +55,7 @@ class NegociacaoController extends Controller
                 $cpfLimpo = preg_replace('/[^0-9]/', '', $doc);
                 if (strlen($cpfLimpo) === 11) {
                     $cpf = $cpfLimpo;
-                    Log::info("[NEGOCIACAO] Usando CPF do parâmetro doc como fallback");
+
                 }
             }
 
