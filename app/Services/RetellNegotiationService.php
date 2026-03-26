@@ -7,10 +7,12 @@ use Illuminate\Support\Facades\Log;
 class RetellNegotiationService
 {
     protected AdoraApiService $adoraApi;
+    protected NumberToWordsService $numberToWords;
 
     public function __construct(?AdoraApiService $adoraApi = null)
     {
         $this->adoraApi = $adoraApi ?? new AdoraApiService();
+        $this->numberToWords = new NumberToWordsService();
     }
 
     /**
@@ -42,12 +44,15 @@ class RetellNegotiationService
         // Ordenar parceladas por número de parcelas (menor → maior)
         usort($parceladas, fn($a, $b) => ($a['installmentNumber'] ?? 0) <=> ($b['installmentNumber'] ?? 0));
 
+        $totalValue = $debit['totalValue'] ?? 0;
+
         return [
-            'customer_name' => $proposal['name'] ?? '',
-            'debit_id'      => $debit['id'],
-            'hash'          => $proposal['hash'] ?? '',
-            'total_value'   => $debit['totalValue'] ?? 0,
-            'valid_date'    => $debit['validDate'] ?? null,
+            'customer_name'        => $proposal['name'] ?? '',
+            'debit_id'             => $debit['id'],
+            'hash'                 => $proposal['hash'] ?? '',
+            'total_value'          => $totalValue,
+            'total_value_formatted' => $this->valorPorExtenso($totalValue),
+            'valid_date'           => $debit['validDate'] ?? null,
 
             'total_options'        => count($options),
             'total_cash'           => count($aVista),
@@ -91,22 +96,40 @@ class RetellNegotiationService
 
     private function formatarOpcao(array $opt): array
     {
+        $totalValue = $opt['totalValue'] ?? 0;
+        $firstValue = $opt['firstValue'] ?? $opt['installmentValue'] ?? 0;
+        $installmentValue = $opt['installmentValue'] ?? 0;
+
         return [
-            'id'                => $opt['id'],
-            'totalValue'        => $opt['totalValue'] ?? 0,
-            'percDiscount'      => $opt['percDiscount'] ?? 0,
-            'firstValue'        => $opt['firstValue'] ?? $opt['installmentValue'] ?? 0,
-            'installmentNumber' => $opt['installmentNumber'] ?? 0,
-            'installmentValue'  => $opt['installmentValue'] ?? 0,
+            'id'                        => $opt['id'],
+            'totalValue'                => $totalValue,
+            'totalValueFormatted'       => $this->valorPorExtenso($totalValue),
+            'percDiscount'              => $opt['percDiscount'] ?? 0,
+            'firstValue'                => $firstValue,
+            'firstValueFormatted'       => $this->valorPorExtenso($firstValue),
+            'installmentNumber'         => $opt['installmentNumber'] ?? 0,
+            'installmentValue'          => $installmentValue,
+            'installmentValueFormatted' => $this->valorPorExtenso($installmentValue),
         ];
     }
 
     private function formatarMelhorOpcao(array $opt): array
     {
+        $totalValue = $opt['totalValue'] ?? 0;
+
         return [
-            'id'           => $opt['id'],
-            'totalValue'   => $opt['totalValue'] ?? 0,
-            'percDiscount' => $opt['percDiscount'] ?? 0,
+            'id'                  => $opt['id'],
+            'totalValue'          => $totalValue,
+            'totalValueFormatted' => $this->valorPorExtenso($totalValue),
+            'percDiscount'        => $opt['percDiscount'] ?? 0,
         ];
+    }
+
+    /**
+     * Converte valor monetário para texto por extenso usando NumberToWordsService.
+     */
+    private function valorPorExtenso($valor): string
+    {
+        return $this->numberToWords->valorPorExtenso($valor);
     }
 }
